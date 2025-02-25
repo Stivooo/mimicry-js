@@ -1,2 +1,2 @@
-# mimic-js
+# mimicry-js
 Library for test doubles
