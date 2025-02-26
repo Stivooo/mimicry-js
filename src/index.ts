@@ -1,3 +1,3 @@
 export const index = () => {
-    return 'Hello World';
-}
+  return "Hello World";
+};
