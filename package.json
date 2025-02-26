@@ -2,9 +2,17 @@
   "name": "mimicry-js",
   "version": "0.0.1",
   "description": "Library for generating mocks for tests",
-  "main": "index.js",
+  "main": "build/index.js",
   "repository": "git@github.com:Stivooo/mimicry-js.git",
   "author": "Vladimir Rybin <vladimir.rybin.98@gmail.com>",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "keywords": [
+    "testing",
+    "factory-bot",
+    "test"
+  ],
+  "files": [
+    "build/"
+  ]
 }
