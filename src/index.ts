@@ -1,1 +1,3 @@
-const a: string = "hello";
+export const index = () => {
+    return 'Hello World';
+}

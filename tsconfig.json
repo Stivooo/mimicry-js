@@ -4,6 +4,7 @@
     "module": "ESNext",
     "lib": [],
     "declaration": true,
+    "declarationDir": "./dist",
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",

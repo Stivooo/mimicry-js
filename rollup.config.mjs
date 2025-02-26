@@ -17,7 +17,7 @@ export default {
     ],
 
     plugins: [
-        typescript({declarationDir: 'dist'}),
+        typescript(),
         terser()
     ],
 };
