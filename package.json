@@ -2,17 +2,34 @@
   "name": "mimicry-js",
   "version": "0.0.1",
   "description": "Library for generating mocks for tests",
-  "main": "build/index.js",
   "repository": "git@github.com:Stivooo/mimicry-js.git",
   "author": "Vladimir Rybin <vladimir.rybin.98@gmail.com>",
   "license": "MIT",
   "private": true,
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.esm.js",
   "keywords": [
     "testing",
-    "factory-bot",
-    "test"
+    "mocks"
   ],
   "files": [
     "build/"
-  ]
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "clean": "rm -rf dist",
+    "prepare": "yarn clean && yarn build"
+  },
+  "devDependencies": {
+    "@eslint/js": "~9.21.0",
+    "@rollup/plugin-terser": "~0.4.4",
+    "@types/node": "~18",
+    "eslint": "~9.21.0",
+    "rollup": "~4.34.8",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "~8.25.0"
+  },
+  "dependencies": {}
 }
