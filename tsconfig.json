@@ -14,8 +14,8 @@
     "strictNullChecks": true,
     "alwaysStrict": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
-  },
+    "esModuleInterop": true,
+    "strictPropertyInitialization": false},
   "include": ["src/*.ts"],
   "exclude": ["src/*.test.ts", "node_modules", "dist"]
 }
