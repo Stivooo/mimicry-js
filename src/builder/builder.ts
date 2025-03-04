@@ -1,6 +1,7 @@
 import {
     BuilderConfiguration,
     BuildTimeConfig,
+    ExtractTraitsNames,
     FieldsConfiguration,
     FieldType,
     Overrides,
@@ -10,45 +11,55 @@ import {isCallable, isClassInstance, isIterator} from '../utils';
 import {isFixedFunction} from '../generators/func';
 import {map} from './map';
 
-function extractTraits<Result, MappedResult>(buildTimeConfig?: BuildTimeConfig<Result, MappedResult>) {
+function extractTraits<Result, Trait extends string, MappedResult>(
+    buildTimeConfig?: BuildTimeConfig<Result, Trait, MappedResult>,
+) {
     const traits = buildTimeConfig?.traits;
     return Array.isArray(traits) ? traits : traits ? [traits] : [];
 }
 
-export class Builder<Preset, Build = Preset> {
+export class Builder<Preset, Build = Preset, Trait extends string = never> {
     private readonly fields: FieldsConfiguration<Preset>;
-    private readonly traits?: TraitsConfiguration<Preset>;
+    private readonly traits?: TraitsConfiguration<Preset, Trait>;
     private readonly postBuild?: (x: Preset) => Build;
 
-    protected constructor({fields, traits, postBuild}: BuilderConfiguration<Preset, Build>) {
+    protected constructor({fields, traits, postBuild}: BuilderConfiguration<Preset, Build, Trait>) {
         this.fields = fields;
         this.traits = traits;
         this.postBuild = postBuild;
     }
 
-    public one<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+    public one<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>) {
         return this.build(buildConfig);
     }
 
-    public many<MapperBuild = Build>(count: number, buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+    public many<MapperBuild = Build>(count: number, buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>) {
         return Array(count)
             .fill(0)
             .map(() => this.build(buildConfig));
     }
 
-    public static create<Preset, Build = Preset>(config: BuilderConfiguration<Preset, Build>) {
+    public static create<
+        Preset,
+        Build = Preset,
+        Traits extends ExtractTraitsNames<BuilderConfiguration<Preset, Build>> = ExtractTraitsNames<
+            BuilderConfiguration<Preset, Build>
+        >,
+    >(config: BuilderConfiguration<Preset, Build, Traits>) {
         return new Builder(config);
     }
 
-    private build<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+    private build<MapperBuild = Build, Trait extends string = string>(
+        buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>,
+    ) {
         const fields = map(this.fields, (key, fieldValue) => {
             const buildOverrides: Overrides<Preset> = buildConfig?.overrides ?? {};
             const buildTraits = extractTraits(buildConfig);
             const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
                 if (!this.traits?.[traitKey]) {
-                    console.warn(`Trait "${traitKey}" is not specified in config!`);
+                    console.warn(`Trait "${String(traitKey)}" is not specified in config!`);
                 }
-                const traitsConfig = this.traits ? this.traits[traitKey] : {};
+                const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, never>);
                 const traitsOverrides = traitsConfig.overrides ?? {};
                 return {...overrides, ...traitsOverrides};
             }, {});
