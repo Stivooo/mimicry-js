@@ -18,7 +18,3 @@ export function isCallable<T extends (...args: any[]) => any>(value: unknown): v
 export function isGeneratorFunction(value: unknown): value is GeneratorFunction {
     return typeof value === 'function' && Object.prototype.toString.call(value) === '[object GeneratorFunction]';
 }
-
-export function identity<T>(x: T) {
-    return x;
-}

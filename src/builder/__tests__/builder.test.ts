@@ -274,43 +274,30 @@ describe('builder checks', () => {
             expect(book.tags[1]).toBeInstanceOf(Tag);
         });
 
-        it('should build by fields configuration with sequence generator', () => {
-            class Book {
-                constructor(
-                    public title: string,
-                    public author: Author,
-                ) {}
-            }
-
-            class Author {
+        it('should rebuild result by build time postBuild', () => {
+            class Tag {
                 constructor(
                     public id: number,
                     public name: string,
                 ) {}
             }
-
             const builder = createBuilder({
                 fields: {
-                    title: 'My Book',
-                    author: {
-                        id: sequence(),
-                        name: 'John Doe',
-                    },
+                    id: sequence(),
+                    name: oneOf('Some', 'Another'),
                 },
-                postBuild: (generatedFields) =>
-                    new Book(
-                        generatedFields.title,
-                        // @ts-ignore TODO fix nested objects types
-                        new Author(generatedFields.author.id, generatedFields.author.name),
-                    ),
             });
 
-            expect(builder.one()).toEqual(new Book('My Book', new Author(0, 'John Doe')));
-            expect(builder.one().author).toBeInstanceOf(Author);
-            expect(builder.many(2)).toEqual([
-                new Book('My Book', new Author(2, 'John Doe')),
-                new Book('My Book', new Author(3, 'John Doe')),
-            ]);
+            const double = builder.one({
+                overrides: {
+                    name: 'Double',
+                },
+                postBuild: (data) => new Tag(data.id, data.name),
+            });
+
+            expect(double).toBeInstanceOf(Tag);
+            expect(double.name).toBe('Double');
+            expect(double.id).toBe(0);
         });
     });
 

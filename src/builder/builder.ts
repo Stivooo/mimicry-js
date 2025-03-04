@@ -1,48 +1,73 @@
-import {Builder, BuilderConfiguration, BuildTimeConfig, FieldType, Overrides} from './types';
-import {identity, isCallable, isClassInstance, isGeneratorFunction, isIterator} from '../utils';
+import {
+    BuilderConfiguration,
+    BuildTimeConfig,
+    FieldsConfiguration,
+    FieldType,
+    Overrides,
+    TraitsConfiguration,
+} from './types';
+import {isCallable, isClassInstance, isIterator} from '../utils';
 import {isFixedFunction} from '../generators/func';
+import {map} from './map';
 
-function extractTraits<Result>(buildTimeConfig?: BuildTimeConfig<Result>) {
+function extractTraits<Result, MappedResult>(buildTimeConfig?: BuildTimeConfig<Result, MappedResult>) {
     const traits = buildTimeConfig?.traits;
     return Array.isArray(traits) ? traits : traits ? [traits] : [];
 }
 
-function map<InputObject extends object, Key extends keyof InputObject, ResultValue>(
-    object: InputObject,
-    callback: (key: Key, value: InputObject[Key], current: Readonly<{[key in Key]: ResultValue}>) => ResultValue,
-) {
-    return (Object.keys(object) as Key[]).reduce(
-        (total, key) => {
-            total[key] = callback(key, object[key], total);
-            return total;
-        },
-        {} as {[key in Key]: ResultValue},
-    );
-}
+export class Builder<Preset, Build = Preset> {
+    private readonly fields: FieldsConfiguration<Preset>;
+    private readonly traits?: TraitsConfiguration<Preset>;
+    private readonly postBuild?: (x: Preset) => Build;
 
-export const createBuilder = <Preset, Result = Preset>(config: BuilderConfiguration<Preset, Result>) => {
-    const extractValue = <T>(
-        field: FieldType<T, Result>,
-        currentResult: Result,
-    ): T | T[] | Set<T> | Map<unknown, T> => {
+    protected constructor({fields, traits, postBuild}: BuilderConfiguration<Preset, Build>) {
+        this.fields = fields;
+        this.traits = traits;
+        this.postBuild = postBuild;
+    }
+
+    public one<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+        return this.build(buildConfig);
+    }
+
+    public many<MapperBuild = Build>(count: number, buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+        return Array(count)
+            .fill(0)
+            .map(() => this.build(buildConfig));
+    }
+
+    public static create<Preset, Build = Preset>(config: BuilderConfiguration<Preset, Build>) {
+        return new Builder(config);
+    }
+
+    private build<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, MapperBuild>) {
+        const fields = map(this.fields, (key, fieldValue) => {
+            const buildOverrides: Overrides<Preset> = buildConfig?.overrides ?? {};
+            const buildTraits = extractTraits(buildConfig);
+            const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
+                if (!this.traits?.[traitKey]) {
+                    console.warn(`Trait "${traitKey}" is not specified in config!`);
+                }
+                const traitsConfig = this.traits ? this.traits[traitKey] : {};
+                const traitsOverrides = traitsConfig.overrides ?? {};
+                return {...overrides, ...traitsOverrides};
+            }, {});
+
+            const originalValue = this.getValueOrOverride(buildOverrides, buildTraitsOverrides, fieldValue, key);
+            return this.extractValue(originalValue);
+        });
+
+        const build = this.postBuild ? this.postBuild(fields as Preset) : fields;
+        return buildConfig?.postBuild ? buildConfig.postBuild(build as Preset) : (build as MapperBuild);
+    }
+
+    public extractValue<Value>(field: FieldType<Value>): Value {
         if (field === null || field === undefined) {
             return field;
         }
 
-        if (Array.isArray(field)) {
-            return field.map((element) => extractValue(element, currentResult)) as T[];
-        }
-
-        if (field instanceof Set) {
-            return new Set(Array.from(field).map((element) => extractValue(element, currentResult) as T));
-        }
-
-        if (field instanceof Map) {
-            return new Map(Array.from(field).map(([key, value]) => [key, extractValue(value, currentResult)]));
-        }
-
         if (isFixedFunction(field)) {
-            return field.call as T;
+            return field.call as Value;
         }
 
         if (isCallable(field)) {
@@ -54,26 +79,18 @@ export const createBuilder = <Preset, Result = Preset>(config: BuilderConfigurat
         }
 
         if (isClassInstance(field)) {
-            return field as T;
-        }
-
-        if (typeof field === 'object') {
-            return map(field, (_, value) => extractValue(value, currentResult)) as T;
+            return field as Value;
         }
 
         return field;
-    };
+    }
 
-    const getValueOrOverride = <
-        O extends Overrides<Preset>,
-        K extends keyof Preset,
-        V extends FieldType<Preset[K], Preset>,
-    >(
+    private getValueOrOverride<O extends Overrides<Preset>, K extends keyof Preset, V extends FieldType<Preset[K]>>(
         overrides: O,
         traitOverrides: O,
         fieldValue: V,
         fieldKey: K,
-    ) => {
+    ) {
         if (fieldKey in overrides) {
             return overrides[fieldKey];
         }
@@ -83,40 +100,7 @@ export const createBuilder = <Preset, Result = Preset>(config: BuilderConfigurat
         }
 
         return fieldValue;
-    };
+    }
+}
 
-    const builder = (buildConfig?: BuildTimeConfig<Preset>) => {
-        const fields = map(config.fields, (key, fieldValue, currentResult) => {
-            const buildOverrides: Overrides<Preset> = buildConfig?.overrides ?? {};
-            const buildTraits = extractTraits(buildConfig);
-            const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
-                const hasTrait = config.traits && config.traits[traitKey];
-                if (!hasTrait) {
-                    console.warn(`Trait "${traitKey}" is not specified in config!`);
-                }
-                const traitsConfig = config.traits ? config.traits[traitKey] : {};
-                const traitsOverrides = traitsConfig.overrides ?? {};
-                return {...overrides, ...traitsOverrides};
-            }, {});
-
-            const originalValue = getValueOrOverride(buildOverrides, buildTraitsOverrides, fieldValue, key);
-            return extractValue(originalValue, currentResult as Result);
-        });
-
-        const postBuild = config.postBuild ?? identity;
-
-        return postBuild(fields as Preset);
-    };
-
-    builder.one = (buildConfig?: BuildTimeConfig<Preset>) => {
-        return builder(buildConfig);
-    };
-
-    builder.many = (count: number, buildConfig?: BuildTimeConfig<Preset>) => {
-        return Array(count)
-            .fill(0)
-            .map(() => builder(buildConfig));
-    };
-
-    return builder as Builder<Result>;
-};
+export const createBuilder = Builder.create;
