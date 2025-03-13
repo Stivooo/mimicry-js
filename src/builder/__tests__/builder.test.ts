@@ -1,6 +1,7 @@
 import {createBuilder} from '../builder';
 import {sequence} from '../../generators/sequence';
 import {oneOf} from '../../generators/oneOf';
+import {fixed} from '../../generators/fixed';
 
 interface IProfileData {
     firstName: string;
@@ -299,6 +300,56 @@ describe('builder checks', () => {
             expect(double.name).toBe('Double');
             expect(double.id).toBe(0);
         });
+
+        it('should build with nested overrides with functional field generator', () => {
+            class Book {
+                constructor(
+                    public id: number,
+                    public title: string,
+                    public author: Author | null,
+                ) {}
+            }
+
+            class Author {
+                constructor(
+                    public id: number,
+                    public name: string,
+                ) {}
+            }
+
+            const builder = createBuilder({
+                fields: {
+                    id: sequence(),
+                    title: 'My Book',
+                    author: null as null | Author,
+                },
+                postBuild: (generatedFields) =>
+                    new Book(generatedFields.id, generatedFields.title, generatedFields.author),
+            });
+
+            const authorBuilder = createBuilder({
+                fields: {
+                    id: 0,
+                    name: 'Author',
+                },
+                postBuild: (generatedFields) => new Author(generatedFields.id, generatedFields.name),
+            });
+
+            expect(
+                builder.one({
+                    overrides: {
+                        title: () => 'Another Book',
+                        author: () =>
+                            authorBuilder.one({
+                                overrides: {
+                                    id: 1000,
+                                    name: 'Charles',
+                                },
+                            }),
+                    },
+                }),
+            ).toEqual(new Book(0, 'Another Book', new Author(1000, 'Charles')));
+        });
     });
 
     describe('builders with different values per builds', () => {
@@ -342,6 +393,24 @@ describe('builder checks', () => {
             const double_2 = new Book(1, 'My Book', new Author(1, 'Charles 1'));
             const double_3 = new Book(2, 'My Book', new Author(2, 'Charles 2'));
             expect(builder.many(3)).toEqual([double_1, double_2, double_3]);
+        });
+    });
+
+    describe('fixedValue generator checks', () => {
+        it('should keep function field with fixedValue decorator', () => {
+            const builder = createBuilder({
+                fields: {
+                    id: sequence(),
+                    name: () => 'Name',
+                    age: 32,
+                    getType: fixed(() => 'Some'),
+                },
+            });
+            const double = builder.one();
+            expect(double.id).toBe(0);
+            expect(double.name).toBe('Name');
+            expect(double.getType).toBeInstanceOf(Function);
+            expect(double.getType()).toBe('Some');
         });
     });
 

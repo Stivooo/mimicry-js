@@ -8,7 +8,7 @@ import {
     TraitsConfiguration,
 } from './types';
 import {isCallable, isClassInstance, isIterator} from '../utils';
-import {isFixedFunction} from '../generators/func';
+import {isFixedValue} from '../generators/fixed';
 import {map} from './map';
 
 function extractTraits<Result, Trait extends string, MappedResult>(
@@ -57,7 +57,7 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
             const buildTraits = extractTraits(buildConfig);
             const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
                 if (!this.traits?.[traitKey]) {
-                    console.warn(`Trait "${String(traitKey)}" is not specified in config!`);
+                    console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
                 }
                 const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, never>);
                 const traitsOverrides = traitsConfig.overrides ?? {};
@@ -77,8 +77,8 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
             return field;
         }
 
-        if (isFixedFunction(field)) {
-            return field.call as Value;
+        if (isFixedValue(field)) {
+            return field.value;
         }
 
         if (isCallable(field)) {
@@ -89,8 +89,8 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
             return field.next().value;
         }
 
-        if (isClassInstance(field)) {
-            return field as Value;
+        if (isClassInstance<Value>(field)) {
+            return field;
         }
 
         return field;
