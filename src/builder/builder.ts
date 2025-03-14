@@ -7,16 +7,11 @@ import {
     Overrides,
     TraitsConfiguration,
 } from './types';
-import {isCallable, isClassInstance, isIterator} from '../utils';
 import {isFixedValue} from '../generators/fixed';
-import {map} from './map';
-
-function extractTraits<Result, Trait extends string, MappedResult>(
-    buildTimeConfig?: BuildTimeConfig<Result, Trait, MappedResult>,
-) {
-    const traits = buildTimeConfig?.traits;
-    return Array.isArray(traits) ? traits : traits ? [traits] : [];
-}
+import {extractOverrides, extractTraits, map} from './utils';
+import {isClassInstance} from '../typeCheckers/isClassInstance';
+import {isIterator} from '../typeCheckers/isIterator';
+import {isCallable} from '../typeCheckers/isCallable';
 
 export class Builder<Preset, Build = Preset, Trait extends string = never> {
     private readonly fields: FieldsConfiguration<Preset>;
@@ -49,12 +44,13 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
         return new Builder(config);
     }
 
-    private build<MapperBuild = Build, Trait extends string = string>(
-        buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>,
+    private mapFieldsWithOverrides<MapperBuild = Build>(
+        fields: FieldsConfiguration<Preset>,
+        config?: BuildTimeConfig<Preset, Trait, MapperBuild>,
     ) {
-        const fields = map(this.fields, (key, fieldValue) => {
-            const buildOverrides: Overrides<Preset> = buildConfig?.overrides ?? {};
-            const buildTraits = extractTraits(buildConfig);
+        return map(fields, (key, fieldValue) => {
+            const buildOverrides = extractOverrides(config);
+            const buildTraits = extractTraits(config);
             const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
                 if (!this.traits?.[traitKey]) {
                     console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
@@ -67,7 +63,10 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
             const originalValue = this.getValueOrOverride(buildOverrides, buildTraitsOverrides, fieldValue, key);
             return this.extractValue(originalValue);
         });
+    }
 
+    private build<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>) {
+        const fields = this.mapFieldsWithOverrides(this.fields, buildConfig);
         const build = this.postBuild ? this.postBuild(fields as Preset) : fields;
         return buildConfig?.postBuild ? buildConfig.postBuild(build as Preset) : (build as MapperBuild);
     }
@@ -114,4 +113,4 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
     }
 }
 
-export const createBuilder = Builder.create;
+export const build = Builder.create;

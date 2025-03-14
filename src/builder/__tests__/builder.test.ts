@@ -1,7 +1,8 @@
-import {createBuilder} from '../builder';
+import {build} from '../builder';
 import {sequence} from '../../generators/sequence';
 import {oneOf} from '../../generators/oneOf';
 import {fixed} from '../../generators/fixed';
+import {withPrev} from '../../generators/withPrev';
 
 interface IProfileData {
     firstName: string;
@@ -27,7 +28,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder<IProfileData>({
+            const builder = build<IProfileData>({
                 fields: {...profile, lastName: 'Doe'},
             });
 
@@ -43,7 +44,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder<IProfileData, Profile>({
+            const builder = build<IProfileData, Profile>({
                 fields: profile,
                 postBuild: (generatedFields) => new Profile(generatedFields),
             });
@@ -62,7 +63,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder<IProfileData>({
+            const builder = build<IProfileData>({
                 fields: profile,
                 traits: {
                     smith: {
@@ -86,7 +87,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder<IProfileData>({
+            const builder = build({
                 fields: profile,
                 traits: {
                     smith: {
@@ -114,7 +115,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: profile as IProfileData,
                 traits: {
                     smith: {
@@ -143,7 +144,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = createBuilder<IProfileData>({
+            const builder = build<IProfileData>({
                 fields: profile,
                 traits: {
                     smith: {
@@ -183,7 +184,7 @@ describe('builder checks', () => {
                 constructor(public name: string) {}
             }
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     title: 'My Book',
                     author: new Author('John Doe'),
@@ -217,7 +218,7 @@ describe('builder checks', () => {
                 [2, new Tag(2, 'tag2')],
             ]);
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     title: 'My Book',
                     tags,
@@ -249,14 +250,14 @@ describe('builder checks', () => {
                 ) {}
             }
 
-            const tagBuilder = createBuilder({
+            const tagBuilder = build({
                 fields: {
                     name: 'tag',
                     id: sequence(),
                 },
             });
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     title: 'My Book',
                     tags: tagBuilder.many(2),
@@ -282,7 +283,7 @@ describe('builder checks', () => {
                     public name: string,
                 ) {}
             }
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     id: sequence(),
                     name: oneOf('Some', 'Another'),
@@ -317,7 +318,7 @@ describe('builder checks', () => {
                 ) {}
             }
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     id: sequence(),
                     title: 'My Book',
@@ -327,7 +328,7 @@ describe('builder checks', () => {
                     new Book(generatedFields.id, generatedFields.title, generatedFields.author),
             });
 
-            const authorBuilder = createBuilder({
+            const authorBuilder = build({
                 fields: {
                     id: 0,
                     name: 'Author',
@@ -369,7 +370,7 @@ describe('builder checks', () => {
                 ) {}
             }
 
-            const authorBuilder = createBuilder({
+            const authorBuilder = build({
                 fields: {
                     id: sequence(),
                     name: sequence((counter) => {
@@ -379,7 +380,7 @@ describe('builder checks', () => {
                 postBuild: (generatedFields) => new Author(generatedFields.id, generatedFields.name),
             });
 
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     id: sequence(),
                     title: 'My Book',
@@ -398,7 +399,7 @@ describe('builder checks', () => {
 
     describe('fixedValue generator checks', () => {
         it('should keep function field with fixedValue decorator', () => {
-            const builder = createBuilder({
+            const builder = build({
                 fields: {
                     id: sequence(),
                     name: () => 'Name',
@@ -414,7 +415,46 @@ describe('builder checks', () => {
         });
     });
 
-    describe('sequence generator checks', () => {});
+    describe('custom generator checks', () => {
+        it('should build by custom generator', () => {
+            function* exponentiation(initialValue = 0) {
+                let exponent = 1;
 
-    describe('oneOf generator checks', () => {});
+                while (true) {
+                    yield initialValue ** exponent;
+                    exponent++;
+                }
+            }
+
+            const builder = build({
+                fields: {
+                    exponent: exponentiation(2),
+                },
+            });
+
+            const [first, second, third] = builder.many(3);
+
+            expect(first.exponent).toBe(2);
+            expect(second.exponent).toBe(4);
+            expect(third.exponent).toBe(8);
+        });
+    });
+
+    describe('withPrev generator checks', () => {
+        it('should build with previous value', () => {
+            const builder = build({
+                fields: {
+                    exponent: withPrev((counter: number = 1) => {
+                        return counter * 10;
+                    }),
+                },
+            });
+
+            const [first, second, third] = builder.many(3);
+
+            expect(first.exponent).toBe(10);
+            expect(second.exponent).toBe(100);
+            expect(third.exponent).toBe(1000);
+        });
+    });
 });
