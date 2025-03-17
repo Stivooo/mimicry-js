@@ -3,6 +3,7 @@ import {sequence} from '../../generators/sequence';
 import {oneOf} from '../../generators/oneOf';
 import {fixed} from '../../generators/fixed';
 import {withPrev} from '../../generators/withPrev';
+import {FieldsConfiguration} from '../types';
 
 interface IProfileData {
     firstName: string;
@@ -116,7 +117,7 @@ describe('builder checks', () => {
             };
 
             const builder = build({
-                fields: profile as IProfileData,
+                fields: profile,
                 traits: {
                     smith: {
                         overrides: {
@@ -302,7 +303,7 @@ describe('builder checks', () => {
             expect(double.id).toBe(0);
         });
 
-        it('should build with nested overrides with functional field generator', () => {
+        it('should build with nested overrides and functional field generator', () => {
             class Book {
                 constructor(
                     public id: number,
@@ -350,6 +351,57 @@ describe('builder checks', () => {
                     },
                 }),
             ).toEqual(new Book(0, 'Another Book', new Author(1000, 'Charles')));
+        });
+
+        it('should build by fields with nested configuration', () => {
+            class Genre {
+                constructor(
+                    public id: number,
+                    public name: string,
+                ) {}
+            }
+
+            class Book {
+                constructor(
+                    public id: number,
+                    public title: string,
+                    public genre: Genre,
+                ) {}
+            }
+
+            type Fields = {
+                id: number;
+                title: string;
+                genre: {
+                    id: number;
+                    name: string;
+                };
+            };
+
+            const fields: FieldsConfiguration<Fields> = {
+                id: sequence(),
+                title: sequence((x) => `Book ${x}`),
+                genre: {
+                    id: sequence(),
+                    name: sequence((x) => `Genre ${x}`),
+                },
+            };
+
+            const bookBuilder = build({
+                fields,
+                postBuild: (generatedFields) =>
+                    new Book(
+                        generatedFields.id,
+                        generatedFields.title,
+                        new Genre(generatedFields.genre.id, generatedFields.genre.name),
+                    ),
+            });
+
+            const double_1 = bookBuilder.one();
+            const double_2 = bookBuilder.one();
+
+            expect(double_1).toEqual(new Book(0, 'Book 0', new Genre(0, 'Genre 0')));
+            expect(double_2).toEqual(new Book(1, 'Book 1', new Genre(1, 'Genre 1')));
         });
     });
 

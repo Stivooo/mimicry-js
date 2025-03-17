@@ -44,23 +44,28 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
         return new Builder(config);
     }
 
-    private mapFieldsWithOverrides<MapperBuild = Build>(
-        fields: FieldsConfiguration<Preset>,
-        config?: BuildTimeConfig<Preset, Trait, MapperBuild>,
+    private mapFieldsWithOverrides<Fields = Preset, MapperBuild = Build>(
+        fields: FieldsConfiguration<Fields>,
+        config?: BuildTimeConfig<Fields, Trait, MapperBuild>,
     ) {
         return map(fields, (key, fieldValue) => {
             const buildOverrides = extractOverrides(config);
             const buildTraits = extractTraits(config);
-            const buildTraitsOverrides = buildTraits.reduce<Overrides<Preset>>((overrides, traitKey) => {
+            const buildTraitsOverrides = buildTraits.reduce<Overrides<Fields>>((overrides, traitKey) => {
                 if (!this.traits?.[traitKey]) {
                     console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
                 }
-                const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, never>);
+                const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, string>);
                 const traitsOverrides = traitsConfig.overrides ?? {};
                 return {...overrides, ...traitsOverrides};
             }, {});
 
-            const originalValue = this.getValueOrOverride(buildOverrides, buildTraitsOverrides, fieldValue, key);
+            const originalValue = this.getValueOrOverride<Fields, Overrides<Fields>>(
+                buildOverrides,
+                buildTraitsOverrides,
+                fieldValue,
+                key,
+            );
             return this.extractValue(originalValue);
         });
     }
@@ -71,7 +76,7 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
         return buildConfig?.postBuild ? buildConfig.postBuild(build as Preset) : (build as MapperBuild);
     }
 
-    public extractValue<Value>(field: FieldType<Value>): Value {
+    public extractValue<Value>(field: FieldType<Value>): Value | Record<string, Value> {
         if (field === null || field === undefined) {
             return field;
         }
@@ -92,15 +97,23 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
             return field;
         }
 
+        if (Array.isArray(field)) {
+            return field.map((value) => this.extractValue(value)) as Value;
+        }
+
+        if (typeof field === 'object') {
+            return this.mapFieldsWithOverrides(field) as Record<string, Value>;
+        }
+
         return field;
     }
 
-    private getValueOrOverride<O extends Overrides<Preset>, K extends keyof Preset, V extends FieldType<Preset[K]>>(
-        overrides: O,
-        traitOverrides: O,
-        fieldValue: V,
-        fieldKey: K,
-    ) {
+    private getValueOrOverride<
+        F,
+        O extends Overrides<F> = Overrides<F>,
+        K extends keyof F = keyof F,
+        V extends FieldType<F[K]> = FieldType<F[K]>,
+    >(overrides: O, traitOverrides: O, fieldValue: V, fieldKey: K) {
         if (fieldKey in overrides) {
             return overrides[fieldKey];
         }
