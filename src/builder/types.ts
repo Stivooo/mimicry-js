@@ -11,7 +11,7 @@ export type FieldsConfiguration<Result> = {
 };
 
 export type FieldsConfigurationGenerator<FactoryResult> = (
-    prevBuild: FactoryResult | null,
+    prevBuild?: FactoryResult,
 ) => FieldsConfiguration<FactoryResult>;
 
 export type BuilderConfiguration<FactoryResult, PostBuildResult = FactoryResult, TraitName extends string = string> = {

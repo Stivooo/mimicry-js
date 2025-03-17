@@ -19,7 +19,7 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
     private readonly traits?: TraitsConfiguration<Preset, Trait>;
     private readonly postBuild?: (x: Preset) => Build;
 
-    private previousPreBuild: Preset | null = null;
+    private previousPreBuild?: Preset;
 
     protected constructor({fields, traits, postBuild}: BuilderConfiguration<Preset, Build, Trait>) {
         this.fieldsGenerator = typeof fields === 'function' ? fields : () => fields;

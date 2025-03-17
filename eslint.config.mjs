@@ -1,14 +1,12 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import jest from 'eslint-plugin-jest';
-import prettier from 'eslint-plugin-prettier/recommended';
 
 export default tseslint.config(
     {
         name: 'source',
         files: ['./src/*'],
         extends: [eslint.configs.recommended, tseslint.configs.recommended],
-        ignores: ['./dist/*'],
     },
     {
         name: 'tests',
@@ -24,5 +22,8 @@ export default tseslint.config(
             'jest/no-identical-title': 'error',
             'jest/valid-expect': 'error',
         },
+    },
+    {
+        ignores: ['dist/*', 'src/coverage/*'],
     },
 );

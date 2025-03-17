@@ -21,6 +21,7 @@
     "clean": "rm -rf dist",
     "prepare": "yarn clean && yarn build",
     "test": "jest -c jest.config.mjs",
+    "test-with-coverage": "jest -c jest.config.mjs --coverage",
     "lint": "eslint"
   },
   "devDependencies": {
