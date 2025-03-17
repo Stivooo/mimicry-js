@@ -3,6 +3,7 @@ import {
     BuildTimeConfig,
     ExtractTraitsNames,
     FieldsConfiguration,
+    FieldsConfigurationGenerator,
     FieldType,
     Overrides,
     TraitsConfiguration,
@@ -14,12 +15,14 @@ import {isIterator} from '../typeCheckers/isIterator';
 import {isCallable} from '../typeCheckers/isCallable';
 
 export class Builder<Preset, Build = Preset, Trait extends string = never> {
-    private readonly fields: FieldsConfiguration<Preset>;
+    private readonly fieldsGenerator: FieldsConfigurationGenerator<Preset>;
     private readonly traits?: TraitsConfiguration<Preset, Trait>;
     private readonly postBuild?: (x: Preset) => Build;
 
+    private previousPreBuild: Preset | null = null;
+
     protected constructor({fields, traits, postBuild}: BuilderConfiguration<Preset, Build, Trait>) {
-        this.fields = fields;
+        this.fieldsGenerator = typeof fields === 'function' ? fields : () => fields;
         this.traits = traits;
         this.postBuild = postBuild;
     }
@@ -71,7 +74,9 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
     }
 
     private build<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>) {
-        const fields = this.mapFieldsWithOverrides(this.fields, buildConfig);
+        const configFields = this.fieldsGenerator(this.previousPreBuild);
+        const fields = this.mapFieldsWithOverrides(configFields, buildConfig);
+        this.previousPreBuild = fields as Preset;
         const build = this.postBuild ? this.postBuild(fields as Preset) : fields;
         return buildConfig?.postBuild ? buildConfig.postBuild(build as Preset) : (build as MapperBuild);
     }

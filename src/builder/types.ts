@@ -10,8 +10,12 @@ export type FieldsConfiguration<Result> = {
     readonly [Key in keyof Result]: FieldType<Result[Key]>;
 };
 
+export type FieldsConfigurationGenerator<FactoryResult> = (
+    prevBuild: FactoryResult | null,
+) => FieldsConfiguration<FactoryResult>;
+
 export type BuilderConfiguration<FactoryResult, PostBuildResult = FactoryResult, TraitName extends string = string> = {
-    readonly fields: FieldsConfiguration<FactoryResult>;
+    readonly fields: FieldsConfiguration<FactoryResult> | FieldsConfigurationGenerator<FactoryResult>;
     readonly traits?: TraitsConfiguration<FactoryResult, TraitName>;
     readonly postBuild?: (x: FactoryResult) => PostBuildResult;
 };

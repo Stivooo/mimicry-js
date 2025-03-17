@@ -56,31 +56,70 @@ describe('builder checks', () => {
         });
     });
 
-    describe('traits checks', () => {
-        it('should build by fields configuration', () => {
-            const profile = {
-                firstName: 'John',
-                lastName: 'Doe',
-                age: 30,
+    describe('builders with functional fields generator', () => {
+        it('should build by using previous build', () => {
+            type Unit = {
+                name: string;
+                value: number;
             };
 
-            const builder = build<IProfileData>({
-                fields: profile,
-                traits: {
-                    smith: {
-                        overrides: {
-                            lastName: 'Smith',
-                            age: 40,
-                        },
-                    },
+            const builder = build<Unit>({
+                fields: (prevBuild) => {
+                    const value = prevBuild?.value ?? 1;
+                    return {
+                        name: 'X',
+                        value: value * 10,
+                    };
                 },
             });
 
-            const double = profile;
-            expect(builder.one()).toEqual(double);
-            expect(builder.many(2)).toEqual([double, double]);
+            expect(builder.many(3)).toEqual([
+                {name: 'X', value: 10},
+                {name: 'X', value: 100},
+                {name: 'X', value: 1000},
+            ]);
         });
 
+        it('should build by using previous build with traits and postBuild', () => {
+            type TUnit = {
+                name: string;
+                value: number;
+            };
+
+            class Unit {
+                constructor(
+                    public name: string,
+                    public value: number,
+                ) {}
+            }
+
+            const builder = build({
+                fields: (prevBuild) => {
+                    const value = prevBuild?.value ?? 1;
+                    return {
+                        name: 'X',
+                        value: value * 10,
+                    };
+                },
+                traits: {
+                    Y: {
+                        overrides: {
+                            name: 'Y',
+                        },
+                    },
+                },
+                postBuild: (generatedFields: TUnit) => new Unit(generatedFields.name, generatedFields.value),
+            });
+
+            expect(builder.many(3, {traits: 'Y'})).toEqual([
+                new Unit('Y', 10),
+                new Unit('Y', 100),
+                new Unit('Y', 1000),
+            ]);
+        });
+    });
+
+    describe('traits checks', () => {
         it('should build by fields configuration with one trait modification', () => {
             const profile = {
                 firstName: 'John',
@@ -145,7 +184,7 @@ describe('builder checks', () => {
                 age: 30,
             };
 
-            const builder = build<IProfileData>({
+            const builder = build({
                 fields: profile,
                 traits: {
                     smith: {
