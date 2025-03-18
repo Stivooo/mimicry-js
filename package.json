@@ -16,7 +16,7 @@
     "dist/"
   ],
   "release": {
-    "branches": ["main", "v*.*.*"]
+    "branches": ["main", "refs/tags/v*.*.*"]
   },
   "scripts": {
     "build": "rollup -c",
