@@ -31,8 +31,8 @@ jobs:
       - name: Run Tests with Coverage
         run: yarn test-with-coverage
 
-      - name: Comment Coverage on PR
-        uses: davelosert/jest-coverage-commenter-action@v2
+      - name: Jest Coverage Commenter
+        uses: dkershner6/jest-coverage-commenter-action@v2.0.2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          coverage-summary-path: coverage/coverage-summary.json
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          test_command: "yarn test-with-coverage"
