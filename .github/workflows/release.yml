@@ -23,6 +23,8 @@ jobs:
 
       - name: Bump version
         run: yarn version --new-version $(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
