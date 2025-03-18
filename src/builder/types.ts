@@ -30,7 +30,7 @@ export type BuildTimeConfig<Result, Trait, MappedResult = Result> = {
     traits?: Trait | Trait[];
 };
 
-export type FreezeKeys<T> = {
+type FreezeKeys<T> = {
     [Key in keyof T as Key]: T[Key];
 };
 
