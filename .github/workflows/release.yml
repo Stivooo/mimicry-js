@@ -21,6 +21,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Bump version
+        run: yarn version --new-version $(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
@@ -29,6 +32,4 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Bump version
-        run: yarn version --new-version $(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
 
