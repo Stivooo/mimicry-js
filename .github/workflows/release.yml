@@ -5,8 +5,8 @@ permissions:
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
 
 jobs:
   release:
@@ -24,8 +24,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run semantic-release
-        run: yarn release
+      - name: Publish to npm
+        run: yarn publish --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Bump version
+        run: yarn version --new-version $(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
+
