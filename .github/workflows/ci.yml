@@ -28,5 +28,11 @@ jobs:
       - name: Run Linter
         run: yarn lint
 
-      - name: Run Tests
-        run: yarn test
+      - name: Run Tests with Coverage
+        run: yarn test-with-coverage
+
+      - name: Comment Coverage on PR
+        uses: davelosert/jest-coverage-commenter-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-summary-path: coverage/coverage-summary.json

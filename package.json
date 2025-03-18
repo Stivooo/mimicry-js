@@ -21,7 +21,7 @@
     "clean": "rm -rf dist & rm -rf src/coverage",
     "prepare": "yarn clean && yarn build",
     "test": "jest -c jest.config.mjs",
-    "test-with-coverage": "jest -c jest.config.mjs --coverage",
+    "test-with-coverage": "jest -c jest.config.mjs --coverage --coverageReporters=json-summary",
     "lint": "eslint"
   },
   "devDependencies": {
