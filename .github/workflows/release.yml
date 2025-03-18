@@ -21,10 +21,18 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Bump version
-        run: yarn version --new-version $(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
-        with:
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          VERSION=$(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
+          yarn version --new-version $VERSION --no-git-tag-version
+          git add package.json yarn.lock
+          git commit -m "chore(release): bump version to $VERSION"
+          git push origin main
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
