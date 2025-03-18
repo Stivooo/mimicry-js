@@ -1,6 +1,6 @@
 {
   "name": "mimicry-js",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Library for generating mocks for tests",
   "repository": "git@github.com:Stivooo/mimicry-js.git",
   "author": "Vladimir Rybin <vladimir.rybin.98@gmail.com>",
