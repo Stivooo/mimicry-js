@@ -15,9 +15,6 @@
   "files": [
     "dist/"
   ],
-  "release": {
-    "branches": ["refs/tags/v*.*.*"]
-  },
   "scripts": {
     "build": "rollup -c",
     "clean": "rm -rf dist/ src/coverage",
