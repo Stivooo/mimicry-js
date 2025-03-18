@@ -14,11 +14,11 @@
     "mocks"
   ],
   "files": [
-    "build/"
+    "dist/"
   ],
   "scripts": {
     "build": "rollup -c",
-    "clean": "rm -rf dist & rm -rf src/coverage",
+    "clean": "rm -rf dist/ src/coverage",
     "prepare": "yarn clean && yarn build",
     "test": "jest -c jest.config.mjs",
     "test-with-coverage": "jest -c jest.config.mjs --coverage",
