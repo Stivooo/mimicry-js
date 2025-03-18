@@ -1,12 +1,9 @@
 name: development
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+on: pull_request
 
 jobs:
   test:
