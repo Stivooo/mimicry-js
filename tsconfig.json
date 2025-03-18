@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "lib": [],
+    "declaration": true,
+    "declarationDir": "./dist",
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strictPropertyInitialization": false},
+  "include": ["src/*.ts"],
+  "exclude": ["src/*.test.ts", "node_modules", "dist"]
+}
