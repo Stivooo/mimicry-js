@@ -26,6 +26,9 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Save current package.json back up
+        run: cp package.json package.json.bak
+
       - name: Switch to main branch
         run: |
           git checkout main
@@ -35,8 +38,8 @@ jobs:
         run: |
           yarn version --new-version $VERSION --no-git-tag-version
           git add package.json yarn.lock
-          git commit -m "chore(release): bump version to $VERSION"
-          git push origin main
+          git commit -m "chore(release): bump version to $VERSION" || true
+          git push origin main || true
 
       - name: Update tag on main
         run: |
@@ -59,3 +62,15 @@ jobs:
         run: yarn publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Revert changes
+        if: failure()
+        run: |
+          mv package.json.bak package.json
+          git add package.json yarn.lock
+          git commit -m "chore: revert failed release"
+          git push origin main
+
+      - name: Delete failed tag
+        if: failure()
+        run: git push --delete origin v${{ env.VERSION }}
