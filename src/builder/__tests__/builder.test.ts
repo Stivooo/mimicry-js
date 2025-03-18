@@ -4,6 +4,8 @@ import {oneOf} from '../../generators/oneOf';
 import {fixed} from '../../generators/fixed';
 import {withPrev} from '../../generators/withPrev';
 import {FieldsConfiguration} from '../types';
+import {bool} from '../../generators/bool';
+import {unique} from '../../generators/unique';
 
 interface IProfileData {
     firstName: string;
@@ -53,6 +55,26 @@ describe('builder checks', () => {
             const double = new Profile(profile);
             expect(builder.one()).toBeInstanceOf(Profile);
             expect(builder.many(2)).toEqual([double, double]);
+        });
+
+        it('should build by fields configuration with build time postBuild processing', () => {
+            const builder = build({
+                fields: {
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    age: 30,
+                },
+            });
+
+            const profile = builder.one({
+                overrides: {
+                    age: 50,
+                },
+                postBuild: (generatedFields) => new Profile(generatedFields),
+            });
+
+            expect(profile).toBeInstanceOf(Profile);
+            expect(profile.age).toBe(50);
         });
     });
 
@@ -547,5 +569,78 @@ describe('builder checks', () => {
             expect(second.exponent).toBe(100);
             expect(third.exponent).toBe(1000);
         });
+    });
+
+    describe('bool generator checks', () => {
+        it('should build with bool value', () => {
+            const builder = build({
+                fields: {
+                    deleted: bool(),
+                },
+            });
+
+            expect([true, false]).toContain(builder.one().deleted);
+        });
+    });
+
+    describe('unique generator checks', () => {
+        it('should build with unique values', () => {
+            const builder = build({
+                fields: {
+                    firstName: unique(['John', 'Andrew', 'Mike']),
+                    lastName: 'Doe',
+                },
+            });
+
+            const profiles = builder.many(3);
+
+            expect(profiles.length).toBe(3);
+
+            const first = profiles[0].firstName;
+            const second = profiles[1].firstName;
+            const third = profiles[2].firstName;
+
+            const leftNames = ['John', 'Andrew', 'Mike'];
+            expect(leftNames).toContain(first);
+            leftNames.splice(leftNames.indexOf(first), 1);
+            expect(leftNames).toContain(second);
+            leftNames.splice(leftNames.indexOf(second), 1);
+            expect(leftNames).toContain(third);
+            leftNames.splice(leftNames.indexOf(third), 1);
+
+            expect(leftNames).toHaveLength(0);
+
+            expect(() => builder.one()).toThrow('No unique options left!');
+        });
+    });
+
+    it('should show log', () => {
+        // Returns unique variant as long as they are available; otherwise, throw error.
+        function* getUnique<T>(variants: T[]): Generator<T> {
+            const leftVariants = variants.concat();
+
+            while (true) {
+                if (!leftVariants.length) {
+                    throw new Error('No unique variants left!');
+                }
+
+                const index = Math.floor(Math.random() * leftVariants.length);
+                const variant = leftVariants[index];
+
+                leftVariants.splice(index, 1);
+                yield variant;
+            }
+        }
+
+        const builder = build({
+            fields: {
+                firstName: getUnique(['John', 'Andrew', 'Mike']),
+                lastName: 'Doe',
+            },
+        });
+
+        const profiles = builder.many(3);
+
+        console.log(profiles);
     });
 });
