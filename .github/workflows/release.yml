@@ -38,7 +38,7 @@ jobs:
           git commit -m "chore(release): bump version to $VERSION"
           git push origin main
 
-      - name: Update tag to include version bump
+      - name: Update tag on main
         run: |
           git tag -f v$VERSION
           git push -f origin v$VERSION
