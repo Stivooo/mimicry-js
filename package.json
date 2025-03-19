@@ -1,7 +1,7 @@
 {
   "name": "mimicry-js",
   "version": "0.0.1",
-  "description": "Library for generating mocks for tests",
+  "description": "TS library for generating fake data for tests",
   "repository": {
     "type": "git",
     "url": "https://github.com/Stivooo/mimicry-js"

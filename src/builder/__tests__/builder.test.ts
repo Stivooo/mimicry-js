@@ -775,4 +775,38 @@ describe('builder checks:', () => {
             expect(() => builder.one()).toThrow('No unique options left!');
         });
     });
+
+    it('should build', () => {
+        interface User {
+            id: number;
+            name: string;
+            role: 'customer' | 'support' | 'administrator';
+            email?: string;
+        }
+
+        const userBuilder = build<User>({
+            fields: {
+                id: sequence(),
+                name: oneOf('John', 'Andrew', 'Mike'),
+                role: oneOf('customer', 'support', 'administrator'),
+            },
+            traits: {
+                customer: {
+                    overrides: {
+                        role: 'customer',
+                    },
+                },
+                withContactDetails: {
+                    overrides: {
+                        email: 'contact@mail.com',
+                    },
+                },
+            },
+        });
+
+        const support = userBuilder.one({traits: ['customer', 'withContactDetails']});
+
+        console.log(support);
+        // { id: 0, name: 'John', role: 'customer', email: 'contact@mail.com' }
+    });
 });

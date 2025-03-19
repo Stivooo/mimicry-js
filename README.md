@@ -7,13 +7,13 @@ A lightweight and flexible TypeScript library for generating mock data for your 
 functional field generators, traits, and post-processing capabilities.  \
 It makes no assumptions about frameworks or libraries, and can be used with any test runner
 
-**Mimicry-js** was inspired by [test-data-bot](github.com/jackfranklin/test-data-bot#readme) and offers more flexibility and advanced TypeScript support.
+**Mimicry-js** was inspired by [test-data-bot](https://github.com/jackfranklin/test-data-bot#readme) and offers more flexibility and advanced TypeScript support.
 
 [![npm version](https://badge.fury.io/js/mimicry-js.svg)](https://badge.fury.io/js/mimicry-js)
 
 ## Motivation
 
-Rather than creating random objects each time you want to test something in your system you can instead use a factory that can create fake data. This keeps your tests consistent and means that they always use data that replicates the real thing. If your tests work off objects close to the real thing they are more useful and there's a higher chance of them finding bugs.
+Rather than creating random objects each time you want to test something in your system you can instead use a builder that can create fake data. This keeps your tests consistent and means that they always use data that replicates the real thing. If your tests work off objects close to the real thing they are more useful and there's a higher chance of them finding bugs.
 
 ## Installation
 
@@ -224,7 +224,7 @@ const user = userBuilder.one();
 
 ### `unique`
 
-Mimicry-js offers another one way to generate unique values. The `unique` function returns a single value from the provided set once.
+Mimicry-js offers another one way to generate unique values. The `unique` function returns a single unique value from the provided set once on each call.
 
 ```ts
 import {build, unique} from 'mimicry-js';
@@ -279,7 +279,7 @@ const thirdUser = userBuilder.one();
 ```
 
 > [!WARNING]
-> Keep in mind that on the first call, the value will always be undefined. \
+> Keep in mind that on the first call, the value will always be an `undefined`. \
 > Also, you need to inform the builder about the type of the received argument if a generic type is not specified for the builder itself.
 
 ## `postBuild` modifications and classes.
@@ -382,77 +382,96 @@ Using `overrides` and `postBuild` lets you easily customise a specific object th
 
 ## Traits
 
+Traits let you define a set of overrides for a builder that can easily be re-applied. Let's imagine you've got a users builder where users can have a support role and a certain email:
 
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
 
-[//]: # (____)
+interface User {
+    id: number;
+    name: string;
+    role: 'customer' | 'support' | 'administrator';
+    email?: string;
+}
 
-[//]: # ()
-[//]: # (Also, a generator that returns unique values as long as they are available.)
+const userBuilder = build<User>({
+    fields: {
+        id: sequence(),
+        name: oneOf('John', 'Andrew', 'Mike'),
+        role: oneOf('customer', 'support', 'administrator'),
+    },
+    traits: {
+        support: {
+            overrides: {
+                role: 'support',
+                email: 'support@mail.com',
+            },
+        },
+    },
+});
 
-[//]: # ()
-[//]: # (```ts)
+const support = userBuilder.one({traits: 'support'});
 
-[//]: # (// Returns unique variant as long as they are available; otherwise, throw error.)
+console.log(support);
+// { id: 0, name: 'John', role: 'support', email: 'support@mail.com' }
+```
+Note that the `support` trait is specified above. As a result, the role and email fields will be overwritten on each call, and we don't have to do this manually using `overrides`:
 
-[//]: # (function* getUnique<T>&#40;variants: T[]&#41;: Generator<T>  {)
+```ts
+const support = userBuilder.one({
+    overrides: {
+        role: 'support',
+        email: 'support@mail.com',
+    },
+});
+```
 
-[//]: # (    const leftVariants = variants.concat&#40;&#41;;)
+So now building an support user is easy:
 
-[//]: # ()
-[//]: # (    while &#40;true&#41; {)
+```ts
+const support = userBuilder.one({traits: 'support'});
+```
 
-[//]: # (        if &#40;!leftVariants.length&#41; {)
+### Multiple traits
 
-[//]: # (            throw new Error&#40;'No unique variants left!'&#41;;)
+You can define and use multiple traits when building an object. Be aware that if two traits override the same value, the one passed in last wins:
 
-[//]: # (        })
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
 
-[//]: # ()
-[//]: # (        const index = Math.floor&#40;Math.random&#40;&#41; * leftVariants.length&#41;;)
+interface User {
+    id: number;
+    name: string;
+    role: 'customer' | 'support' | 'administrator';
+    email?: string;
+}
 
-[//]: # (        const variant = leftVariants[index];)
+const userBuilder = build<User>({
+    fields: {
+        id: sequence(),
+        name: oneOf('John', 'Andrew', 'Mike'),
+        role: oneOf('customer', 'support', 'administrator'),
+    },
+    traits: {
+        customer: {
+            overrides: {
+                role: 'customer',
+            },
+        },
+        withContactDetails: {
+            overrides: {
+                email: 'contact@mail.com',
+            },
+        },
+    },
+});
 
-[//]: # ()
-[//]: # (        leftVariants.splice&#40;index, 1&#41;;)
+const customer = userBuilder.one({traits: ['customer', 'withContactDetails']});
 
-[//]: # (        yield variant;)
+console.log(customer);
+// { id: 0, name: 'John', role: 'customer', email: 'contact@mail.com' }
+```
 
-[//]: # (    })
-
-[//]: # (})
-
-[//]: # ()
-[//]: # (const builder = build&#40;{)
-
-[//]: # (    fields: {)
-
-[//]: # (        firstName: getUnique&#40;['John', 'Andrew', 'Mike']&#41;,)
-
-[//]: # (        lastName: 'Doe',)
-
-[//]: # (    },)
-
-[//]: # (}&#41;;)
-
-[//]: # ()
-[//]: # (const profiles = builder.many&#40;3&#41;;)
-
-[//]: # ()
-[//]: # (console.log&#40;profiles&#41;;)
-
-[//]: # (// [)
-
-[//]: # (//     { firstName: 'Mike', lastName: 'Doe' },)
-
-[//]: # (//     { firstName: 'John', lastName: 'Doe' },)
-
-[//]: # (//     { firstName: 'Andrew', lastName: 'Doe' })
-
-[//]: # (// ])
-
-[//]: # (```)
-
----
 
 ## License
 
