@@ -5,16 +5,14 @@
 export function unique<T>(options: T[]): Generator<T, never, never>;
 export function unique<T>(options: T): Generator<T, never, never>;
 export function unique<T>(...options: T[]): Generator<T, never, never>;
-export function* unique<T>(options: T[]): Generator<T, never, never> {
-    const leftOptions = options.concat();
+export function* unique<T>(options: T[] | T, ...rest: T[]): Generator<T, never, never> {
+    const optionsArray = Array.isArray(options) ? options : [options, ...rest];
+    const leftOptions = optionsArray.concat();
 
     while (true) {
         if (!leftOptions.length) {
             throw new Error('No unique options left!');
         }
-        const index = Math.floor(Math.random() * leftOptions.length);
-        const option = leftOptions[index];
-        leftOptions.splice(index, 1);
-        yield option;
+        yield leftOptions.shift() as T;
     }
 }
