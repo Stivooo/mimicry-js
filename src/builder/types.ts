@@ -21,7 +21,7 @@ export type BuilderConfiguration<FactoryResult, PostBuildResult = FactoryResult,
 };
 
 export type Overrides<Result> = {
-    [Key in keyof Result]?: FieldType<Result[Key]>;
+    [Key in keyof Result]?: FieldType<Result[Key]> | Overrides<Result[Key]>;
 };
 
 export type BuildTimeConfig<Result, Trait, MappedResult = Result> = {
@@ -30,7 +30,7 @@ export type BuildTimeConfig<Result, Trait, MappedResult = Result> = {
     traits?: Trait | Trait[];
 };
 
-type FreezeKeys<T> = {
+export type FreezeKeys<T> = {
     [Key in keyof T as Key]: T[Key];
 };
 
@@ -39,3 +39,7 @@ export type TraitsConfiguration<FactoryResultType, TraitName extends string> = {
 };
 
 export type ExtractTraitsNames<Config> = Config extends BuilderConfiguration<any, any, infer Traits> ? Traits : never;
+
+export type Mutable<T> = {
+    -readonly [Key in keyof T]: T[Key];
+};

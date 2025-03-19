@@ -5,14 +5,17 @@ import {
     FieldsConfiguration,
     FieldsConfigurationGenerator,
     FieldType,
+    FreezeKeys,
+    Mutable,
     Overrides,
     TraitsConfiguration,
 } from './types';
 import {isFixedValue} from '../generators/fixed';
-import {extractOverrides, extractTraits, map} from './utils';
+import {extractOverrides, extractTraits, makeMutable, map} from './utils';
 import {isClassInstance} from '../typeCheckers/isClassInstance';
 import {isIterator} from '../typeCheckers/isIterator';
 import {isCallable} from '../typeCheckers/isCallable';
+import {deepMerge} from './utils/deepMerge';
 
 export class Builder<Preset, Build = Preset, Trait extends string = never> {
     private readonly fieldsGenerator: FieldsConfigurationGenerator<Preset>;
@@ -51,26 +54,20 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
         fields: FieldsConfiguration<Fields>,
         config?: BuildTimeConfig<Fields, Trait, MapperBuild>,
     ) {
-        return map(fields, (key, fieldValue) => {
-            const buildOverrides = extractOverrides(config);
-            const buildTraits = extractTraits(config);
-            const buildTraitsOverrides = buildTraits.reduce<Overrides<Fields>>((overrides, traitKey) => {
-                if (!this.traits?.[traitKey]) {
-                    console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
-                }
-                const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, string>);
-                const traitsOverrides = traitsConfig.overrides ?? {};
-                return {...overrides, ...traitsOverrides};
-            }, {});
+        const buildOverrides = extractOverrides(config);
+        const buildTraitsOverrides = extractTraits(config).reduce<Overrides<Fields>>((traitsOverrides, traitKey) => {
+            if (!this.traits?.[traitKey]) {
+                console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
+            }
+            const traitsConfig = this.traits ? this.traits[traitKey] : ({} as TraitsConfiguration<Preset, string>);
+            const currentTraitOverrides = traitsConfig.overrides ?? {};
+            return deepMerge(traitsOverrides, currentTraitOverrides);
+        }, {});
 
-            const originalValue = this.getValueOrOverride<Fields, Overrides<Fields>>(
-                buildOverrides,
-                buildTraitsOverrides,
-                fieldValue,
-                key,
-            );
-            return this.extractValue(originalValue);
-        });
+        const combinedWithTraits = deepMerge(fields, buildTraitsOverrides);
+        const combinedWithOverrides = deepMerge(combinedWithTraits, buildOverrides);
+
+        return map(combinedWithOverrides, (originalValue) => this.extractValue(originalValue));
     }
 
     private build<MapperBuild = Build>(buildConfig?: BuildTimeConfig<Preset, Trait, MapperBuild>) {
@@ -111,23 +108,6 @@ export class Builder<Preset, Build = Preset, Trait extends string = never> {
         }
 
         return field;
-    }
-
-    private getValueOrOverride<
-        F,
-        O extends Overrides<F> = Overrides<F>,
-        K extends keyof F = keyof F,
-        V extends FieldType<F[K]> = FieldType<F[K]>,
-    >(overrides: O, traitOverrides: O, fieldValue: V, fieldKey: K) {
-        if (fieldKey in overrides) {
-            return overrides[fieldKey];
-        }
-
-        if (fieldKey in traitOverrides) {
-            return traitOverrides[fieldKey];
-        }
-
-        return fieldValue;
     }
 }
 

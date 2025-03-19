@@ -23,7 +23,7 @@ class Profile {
     }
 }
 
-describe('builder checks', () => {
+describe('builder checks:', () => {
     describe('plain builders with primitives', () => {
         it('should build by fields configuration', () => {
             const profile = {
@@ -231,6 +231,40 @@ describe('builder checks', () => {
             ).toEqual(double);
             expect(builder.many(2, {traits: ['smith', 'younger']})).toEqual([double, double]);
         });
+
+        it('should fill skipped unnecessary fields by traits values', () => {
+            interface User {
+                id: number;
+                name: string;
+                role: 'customer' | 'support' | 'admin';
+                email?: string;
+            }
+
+            const userBuilder = build<User>({
+                fields: {
+                    id: sequence(),
+                    name: oneOf('John', 'Andrew', 'Mike'),
+                    role: oneOf('customer', 'support', 'admin'),
+                },
+                traits: {
+                    support: {
+                        overrides: {
+                            role: 'support',
+                            email: 'support@example.com',
+                        },
+                    },
+                },
+            });
+
+            const supportUser = userBuilder.one({
+                overrides: {
+                    name: 'John',
+                },
+                traits: 'support',
+            });
+
+            expect(supportUser).toEqual({id: 0, name: 'John', role: 'support', email: 'support@example.com'});
+        });
     });
 
     describe('builders with classes as fields values', () => {
@@ -414,55 +448,31 @@ describe('builder checks', () => {
             ).toEqual(new Book(0, 'Another Book', new Author(1000, 'Charles')));
         });
 
-        it('should build by fields with nested configuration', () => {
-            class Genre {
-                constructor(
-                    public id: number,
-                    public name: string,
-                ) {}
-            }
-
-            class Book {
-                constructor(
-                    public id: number,
-                    public title: string,
-                    public genre: Genre,
-                ) {}
-            }
-
-            type Fields = {
+        it('should fill skipped unnecessary fields by overrides values', () => {
+            interface User {
                 id: number;
-                title: string;
-                genre: {
-                    id: number;
-                    name: string;
-                };
-            };
+                name: string;
+                role: 'customer' | 'support' | 'admin';
+                email?: string;
+            }
 
-            const fields: FieldsConfiguration<Fields> = {
-                id: sequence(),
-                title: sequence((x) => `Book ${x}`),
-                genre: {
+            const userBuilder = build<User>({
+                fields: {
                     id: sequence(),
-                    name: sequence((x) => `Genre ${x}`),
+                    name: oneOf('John', 'Andrew', 'Mike'),
+                    role: oneOf('customer', 'support', 'admin'),
                 },
-            };
-
-            const bookBuilder = build({
-                fields,
-                postBuild: (generatedFields) =>
-                    new Book(
-                        generatedFields.id,
-                        generatedFields.title,
-                        new Genre(generatedFields.genre.id, generatedFields.genre.name),
-                    ),
             });
 
-            const double_1 = bookBuilder.one();
-            const double_2 = bookBuilder.one();
+            const supportUser = userBuilder.one({
+                overrides: {
+                    name: 'John',
+                    role: 'support',
+                    email: 'support@example.com',
+                },
+            });
 
-            expect(double_1).toEqual(new Book(0, 'Book 0', new Genre(0, 'Genre 0')));
-            expect(double_2).toEqual(new Book(1, 'Book 1', new Genre(1, 'Genre 1')));
+            expect(supportUser).toEqual({id: 0, name: 'John', role: 'support', email: 'support@example.com'});
         });
     });
 
@@ -538,16 +548,81 @@ describe('builder checks', () => {
     });
 
     describe('builders with nested plain object in configuration', () => {
-        it('should build structure with correct overrides', () => {
-            type Structure = {
+        type Structure = {
+            id: number;
+            type: string;
+            unit: {
                 id: number;
-                type: string;
-                unit: {
-                    id: number;
-                    value: number;
+                value: number;
+                name: string;
+                position: {
+                    x: number;
+                    y: number;
                 };
             };
+        };
 
+        it('should build structure with correct traits overrides', () => {
+            const builder = build<Structure>({
+                fields: {
+                    id: sequence(),
+                    type: 'Type',
+                    unit: {
+                        id: sequence(),
+                        value: 30,
+                        name: 'degree',
+                        position: {
+                            x: 100,
+                            y: 100,
+                        },
+                    },
+                },
+                traits: {
+                    zeroPoint: {
+                        overrides: {
+                            unit: {
+                                position: {
+                                    x: 0,
+                                    y: 0,
+                                },
+                            },
+                        },
+                    },
+                    zeroValue: {
+                        overrides: {
+                            unit: {
+                                value: 0,
+                            },
+                        },
+                    },
+                },
+            });
+
+            const structure = builder.one({
+                traits: ['zeroPoint', 'zeroValue'],
+                overrides: {
+                    unit: {
+                        id: 5,
+                    },
+                },
+            });
+
+            expect(structure).toEqual({
+                id: 0,
+                type: 'Type',
+                unit: {
+                    id: 5,
+                    value: 0,
+                    name: 'degree',
+                    position: {
+                        x: 0,
+                        y: 0,
+                    },
+                },
+            });
+        });
+
+        it('should build structure with correct overrides', () => {
             const builder = build<Structure>({
                 fields: {
                     id: sequence(),
@@ -555,6 +630,11 @@ describe('builder checks', () => {
                     unit: {
                         id: sequence(),
                         value: 1,
+                        name: 'degree',
+                        position: {
+                            x: 50,
+                            y: 14,
+                        },
                     },
                 },
             });
@@ -563,15 +643,41 @@ describe('builder checks', () => {
                 overrides: {
                     type: sequence((x) => `Type ${++x}`),
                     unit: {
-                        id: sequence(),
                         value: unique(5, 10),
+                        position: {
+                            y: 50,
+                        },
                     },
                 },
             });
 
             expect(structures).toEqual([
-                {id: 0, type: 'Type 1', unit: {id: 0, value: 5}},
-                {id: 1, type: 'Type 2', unit: {id: 1, value: 10}},
+                {
+                    id: 0,
+                    type: 'Type 1',
+                    unit: {
+                        id: 0,
+                        value: 5,
+                        name: 'degree',
+                        position: {
+                            x: 50,
+                            y: 50,
+                        },
+                    },
+                },
+                {
+                    id: 1,
+                    type: 'Type 2',
+                    unit: {
+                        id: 1,
+                        value: 10,
+                        name: 'degree',
+                        position: {
+                            x: 50,
+                            y: 50,
+                        },
+                    },
+                },
             ]);
         });
     });

@@ -120,7 +120,7 @@ const builder = build({
 
 ## Built-in value generators
 
-## `fixed`
+### `fixed`
 
 Since by default, the builder calls the provided functions to get field values, mimicry-js offers the `fixed` decorator, which allows keeping a value unchanged. \
 For example, if we need the getName field in the generated object to be a function, we can wrap this function with `fixed`.
@@ -141,7 +141,7 @@ const thing = builder.one();
 console.log(thing.getName()); // --> "Plain object"
 ```
 
-## `sequence`
+### `sequence`
 
 Often you will be creating objects that have an ID that comes from a database, so you need to guarantee that it's unique. You can use `sequence`, which increments the value on each call, starting **from 0**:
 
@@ -186,7 +186,7 @@ const thirdPerson = profileBuilder.one();
 // secondPerson.email === john1@mail.com
 // thirdPerson.email === john2@mail.com
 ```
-## `oneOf`
+### `oneOf`
 
 If you want an object to have a random value, picked from a list you control, you can use oneOf:
 
@@ -204,7 +204,7 @@ const user = userBuilder.one();
 // user.name === "John" | "Andrew" | "Mike"
 ```
 
-## `bool`
+### `bool`
 
 If you need something to be either `true` or `false`, you can use `bool`:
 
@@ -222,7 +222,7 @@ const user = userBuilder.one();
 // user.name === true | false
 ```
 
-## `unique`
+### `unique`
 
 Mimicry-js offers another one way to generate unique values. The `unique` function returns a single value from the provided set once.
 
@@ -249,9 +249,9 @@ console.log(users);
 userBuilder.one(); // throws Error "No unique options left!"
 ```
 >[!WARNING]
-> If there are no unused values left, unique throws an exception. Therefore, it's more appropriate to use this generator primarily in [overrides](#overrides) to limit the set of values.
+> If there are no unused values left, `unique` throws an exception. Therefore, it's more appropriate to use this generator primarily in [overrides](#overrides) to control the set of values.
 
-## `withPrev`
+### `withPrev`
 
 Sometimes we need unique but related values. For example, simulating the creation date of an entity. \
 In such cases, you can use the `withPrev` decorator. It takes a function that has access to the result of the previous call of this function.
@@ -282,7 +282,105 @@ const thirdUser = userBuilder.one();
 > Keep in mind that on the first call, the value will always be undefined. \
 > Also, you need to inform the builder about the type of the received argument if a generic type is not specified for the builder itself.
 
-## Overrides
+## `postBuild` modifications and classes.
+
+Often, we need not just plain objects but instances of classes. In this case, you can pass a `postBuild` function along with fields. \
+It allows you to transform the generated object as needed, for example, to create a class instance.
+
+```ts
+import {build} from 'mimicry-js';
+
+class User {
+    constructor(
+        public id: number,
+        public name: string,
+    ) {}
+}
+
+const userBuilder = build({
+    fields: {
+        id: 0,
+        firstName: 'John',
+        lastName: 'Doe',
+    },
+    postBuild: ({id, firstName, lastName}) => new User(id, `${firstName} ${lastName}`),
+});
+
+const user = userBuilder.one();
+
+console.log(user);
+// User { id: 0, name: 'John Doe' }
+```
+
+> [!NOTE]
+> In this case, the builder infers the `one`s return type as `User`.
+> 
+> `const user: User`
+
+## Overrides per-build
+
+We often need to generate a random object but control one of the values directly for the purpose of testing. When you call a builder you can pass in `overrides` which will override the builder defaults:
+
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
+
+const userBuilder = build({
+    fields: {
+        id: sequence(),
+        name: oneOf('Sam', 'Andrew', 'Mike'),
+    },
+});
+
+const user = userBuilder.one({
+    overrides: {
+        id: 5,
+        name: 'John',
+    },
+});
+
+console.log(user);
+// { id: 1, name: 'John' }
+```
+
+If you need to edit the object directly, you can pass in a `postBuild` function when you call the builder. This will be called after Mimicry-js has generated the fake object, and lets you directly change it.
+
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
+
+class User {
+    constructor(
+        public id: number,
+        public name: string,
+    ) {}
+}
+
+const userBuilder = build({
+    fields: {
+        id: sequence(),
+        firstName: oneOf('Sam', 'Andrew', 'Mike'),
+        lastName: oneOf('Doe', 'Smith', 'Jackson'),
+    },
+});
+
+const user = userBuilder.one({
+    overrides: {
+        id: 5,
+        firstName: 'John',
+        lastName: 'Doe',
+    },
+    postBuild: ({id, firstName, lastName}) => new User(id, `${firstName} ${lastName}`),
+});
+
+console.log(user);
+// User { id: 5, name: 'John Doe' }
+```
+
+> [!NOTE]
+> In this case, the builder also determines that the return type of the `one` method has changed to `User`.
+
+Using `overrides` and `postBuild` lets you easily customise a specific object that a builder has created.
+
+## Traits
 
 
 
