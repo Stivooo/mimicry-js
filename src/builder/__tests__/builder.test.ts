@@ -506,6 +506,65 @@ describe('builder checks:', () => {
 
             expect(supportUser).toEqual({id: 0, name: 'John', role: 'support', email: 'support@example.com'});
         });
+
+        it('should build by fields configurations with nested array of configurations', () => {
+            interface Account {
+                id: number;
+                name: string;
+                addresses: Array<{
+                    apartment: string;
+                    street: string;
+                    city: string;
+                    postalCode: number;
+                }>;
+            }
+
+            const builder = build<Account>({
+                fields: {
+                    id: sequence(),
+                    name: 'John',
+                    addresses: [],
+                },
+            });
+
+            const account = builder.one({
+                overrides: {
+                    addresses: [
+                        {
+                            apartment: sequence((x) => x.toString()),
+                            street: oneOf('456 Elm Ave'),
+                            city: oneOf('Los Angeles'),
+                            postalCode: 98101,
+                        },
+                        {
+                            apartment: sequence((x) => x.toString()),
+                            street: oneOf('101 Pine Ln'),
+                            city: oneOf('San Francisco'),
+                            postalCode: 10001,
+                        },
+                    ],
+                },
+            });
+
+            expect(account).toEqual({
+                id: 0,
+                name: 'John',
+                addresses: [
+                    {
+                        apartment: '0',
+                        street: '456 Elm Ave',
+                        city: 'Los Angeles',
+                        postalCode: 98101,
+                    },
+                    {
+                        apartment: '0',
+                        street: '101 Pine Ln',
+                        city: 'San Francisco',
+                        postalCode: 10001,
+                    },
+                ],
+            });
+        });
     });
 
     describe('builders with different values per builds', () => {

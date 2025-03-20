@@ -477,14 +477,14 @@ console.log(customer);
 
 ## Advanced features
 
-### Retrieving the result of the previous build as a whole
+### Retrieving the entire result of the previous build
 
 Sometimes we need to generate complex objects with related values. In this case, the builder allows passing fields as a function that returns an object to build and takes the result of the previous call.
 
-For example, in the code below, the `price` field depends on the value of the `count` field. Moreover, the count field `count` changes with each build, so we need access to the result of the previous call.
+For example, in the code below, the `price` field depends on the value of the `count` field. Moreover, the `count` field changes with each build, so we need access to the result of the previous call.
 
 ```ts
-import {build, sequence, oneOf} from 'mimicry-js';
+import {build, sequence} from 'mimicry-js';
 
 interface Order {
     count: number;
@@ -492,8 +492,8 @@ interface Order {
 }
 
 const orderBuilder = build({
-    fields: (previousBuild?: Order) => {
-        const count = previousBuild?.count ? previousBuild.count + 1 : 1;
+    fields: (previous?: Order) => {
+        const count = previous ? previous.count + 1 : 1;
 
         return {
             count: sequence((x) => ++x),
@@ -516,11 +516,354 @@ console.log(orders);
 > Note that the value of the previous build will always be `undefined` on the first call. \
 > Also, you need to inform the builder about the type of the received argument if a generic type is not specified for the builder itself.
 
-### Deep plain object merging
+> [!NOTE]
+> The builder preserves iterators after the first function call and continues using them instead of creating new ones, even though the function passed as `fields` is called each time.
+
+### Deep plain object merging in `overrides` and `traits`.
+
+Let's imagine that one of the object's fields is another object that also requires fake data.
+
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
+
+interface Account {
+    id: number;
+    name: string;
+    address: {
+        apartment: string;
+        street: string;
+        city: string;
+        postalCode: number;
+    };
+}
+
+const builder = build<Account>({
+    fields: {
+        id: sequence(),
+        name: 'John',
+        address: {
+            apartment: sequence((x) => x.toString()),
+            street: oneOf('123 Main St', '456 Elm Ave'),
+            city: oneOf('New York', 'Los Angeles'),
+            postalCode: sequence((x) => x + 1000),
+        },
+    },
+});
+
+const account = builder.one();
+
+console.log(account);
+// {
+//   id: 0,
+//   name: 'John',
+//   address: {
+//     apartment: '0',
+//     street: '456 Elm Ave',
+//     city: 'Los Angeles',
+//     postalCode: 1000
+//   }
+// }
+```
+
+> [!NOTE]
+> You can just as easily create a separate builder for the `address` object and use it, but in this case, the data will be static.
+
+> [!WARNING]
+> Note that in this case, you must specify the type to ensure the builder correctly infers types.
+
+When using this builder, we may need to override certain fields, such as `city` and `street` of the address.
+So, we can do that:
+
+```ts
+const account = builder.one({
+    overrides: {
+        address: {
+            city: 'San Francisco',
+            street: '101 Pine Ln',
+        },
+    },
+});
+
+console.log(account);
+// {
+//   id: 0,
+//   name: 'John',
+//   address: {
+//     apartment: '0',
+//     street: '101 Pine Ln',
+//     city: 'San Francisco',
+//     postalCode: 1000
+//   }
+// }
+```
+
+You may notice that we don't need to specify all the fields of the `address` object in overrides.
+This behavior is also similar for `traits`:
+
+```ts
+const builder = build<Account>({
+    fields: {
+        id: sequence(),
+        name: 'John',
+        address: {
+            apartment: sequence((x) => x.toString()),
+            postalCode: sequence((x) => x + 1000),
+            street: '',
+            city: '',
+        },
+    },
+    traits: {
+        NY: {
+            overrides: {
+                address: {
+                    street: '123 Main St',
+                    city: 'New York',
+                },
+            },
+        },
+        LA: {
+            overrides: {
+                address: {
+                    street: '456 Elm Ave',
+                    city: 'Los Angeles',
+                },
+            },
+        },
+    },
+});
+
+const account = builder.one({
+    traits: 'LA',
+});
+
+console.log(account);
+// {
+//   id: 0,
+//   name: 'John',
+//   address: {
+//     apartment: '0',
+//     postalCode: 1000,
+//     street: '456 Elm Ave',
+//     city: 'Los Angeles'
+//   }
+// }
+```
+
+### Nested array of configurations with field generators
+
+The builder checks the values of arrays in the provided fields to handle nested generators.
+
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
+
+interface Account {
+    id: number;
+    name: string;
+    addresses: Array<{
+        apartment: string;
+        street: string;
+        city: string;
+        postalCode: number;
+    }>;
+}
+
+const builder = build<Account>({
+    fields: {
+        id: sequence(),
+        name: 'John',
+        addresses: [],
+    },
+});
+
+const account = builder.one({
+    overrides: {
+        addresses: [
+            {
+                apartment: sequence((x) => x.toString()),
+                street: oneOf('456 Elm Ave'),
+                city: oneOf('Los Angeles'),
+                postalCode: 98101,
+            },
+            {
+                apartment: sequence((x) => x.toString()),
+                street: oneOf('101 Pine Ln'),
+                city: oneOf('San Francisco'),
+                postalCode: 10001,
+            },
+        ],
+    },
+});
+
+console.log(account);
+// {
+//   id: 0,
+//   name: 'John',
+//   addresses: [
+//     {
+//       apartment: '0',
+//       street: '456 Elm Ave',
+//       city: 'Los Angeles',
+//       postalCode: 98101
+//     },
+//     {
+//       apartment: '0',
+//       street: '101 Pine Ln',
+//       city: 'San Francisco',
+//       postalCode: 10001
+//     }
+//   ]
+// }
+```
+
+> [!NOTE]
+> However, the builder does not perform deep merging of arrays in `traits` and `overrides`.
+
+> [!WARNING]
+> Note that in this case, you must specify the type to ensure the builder correctly infers types.
 
 ### Custom generators
 
-## About typing
+You can also use custom iterators to generate field values:
+
+```ts
+import {build} from 'mimicry-js';
+
+function* exponentiation(initialValue = 0) {
+    let exponent = 1;
+
+    while (true) {
+        yield initialValue ** exponent;
+        exponent++;
+    }
+}
+
+const builder = build({
+    fields: {
+        exponent: exponentiation(2),
+    },
+});
+
+const [first, second, third] = builder.many(3);
+
+// first.exponent === 2
+// second.exponent === 4
+// third.exponent === 8
+```
+
+## About TypeScript types
+
+Mimicry-js is written in TypeScript and ships with the types generated so if you're using TypeScript you will get some nice type support out the box. \
+The builder below, in addition to the object with fields, has a set of traits and a postBuild transformer.
+
+```ts
+import {build} from 'mimicry-js';
+
+class Profile {
+    name: string;
+    age?: number;
+
+    constructor({firstName, lastName, age}: IProfileData) {
+        this.name = `${firstName} ${lastName}`;
+        this.age = age;
+    }
+}
+
+const profile = {
+    firstName: 'John',
+    lastName: 'Doe',
+    age: 30,
+};
+
+const builder = build({
+    fields: profile,
+    traits: {
+        younger: {
+            overrides: {
+                age: 18,
+            },
+        },
+        older: {
+            overrides: {
+                age: 50,
+            },
+        },
+    },
+    postBuild: (generatedFields) => new Profile(generatedFields),
+});
+```
+And it has all the information about the input data types, trait names, and the result type:
+
+```ts
+const builder: Builder<{
+    firstName: string
+    lastName: string
+    age: number
+}, Profile, "younger" | "older">
+```
+
+So, in most situations, types don’t need to be specified manually, except for cases with generators in [nested objects](#deep-plain-object-merging-in-overrides-and-traits) and [arrays](#nested-array-of-configurations-with-field-generators).
+
+> [!IMPORTANT]
+> If you manually specify the builder object's generic, the builder loses information about the specific `traits` names (the type becomes `string`). This is due to TypeScript's behavior: default values are used for all generics if even one of them is provided.
+>
+> ```ts
+> const builder = build<Profile>({ ... });
+> ```
+> ```ts
+> const builder: Builder<Profile, Profile, string>
+> ```
+
+So, if you want to take full advantage of IDE features related to type-based code suggestions when filling out fields, while allowing the builder to infer the types automatically, you can use the built-in `FieldsConfiguration` type:
+
+```ts
+import {build, sequence, FieldsConfiguration} from 'mimicry-js';
+
+interface IProfileData {
+    id: number;
+    firstName: string;
+    lastName: string;
+    age?: number;
+}
+
+const profile: FieldsConfiguration<IProfileData> = {
+    id: sequence(),
+    firstName: 'John',
+    lastName: 'Doe',
+    age: 30,
+};
+
+const builder = build({
+    fields: profile,
+    postBuild: (generatedFields) => new Profile(generatedFields),
+    traits: {
+        younger: {
+            overrides: {
+                age: 18,
+            },
+        },
+        older: {
+            overrides: {
+                age: 50,
+            },
+        },
+    },
+});
+```
+
+As a result, the builder retains all the type information and can validate the trait names passed to it, while you get all the TypeScript checks when filling out the fields.
+
+```ts
+const builder: Builder<IProfileData, Profile, "younger" | "older">
+```
+
+```ts
+builder.one({
+    traits: 'other'
+})
+
+// TS2322: Type "other" is not assignable to type
+// "younger" | "older" | ("younger" | "older")[] | undefined
+```
 
 ## License
 
