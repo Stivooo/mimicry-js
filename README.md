@@ -840,7 +840,7 @@ So, in most situations, types don’t need to be specified manually, except for 
 > const builder: Builder<Profile, Profile, string>
 > ```
 
-So, if you want to take full advantage of IDE features related to type-based code suggestions when filling out fields, while allowing the builder to infer the types automatically, you can use the built-in `FieldsConfiguration` type:
+So, if you want to get type checking and use type-based code suggestions when filling out fields, while allowing the builder to infer types automatically, you can use the built-in `FieldsConfiguration` type:
 
 ```ts
 import {build, sequence, FieldsConfiguration} from 'mimicry-js';
