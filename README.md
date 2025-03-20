@@ -11,6 +11,33 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
 
 [![npm version](https://badge.fury.io/js/mimicry-js.svg)](https://badge.fury.io/js/mimicry-js)
 
+### Table of Contents
+<details>
+
+- [Motivation](#motivation)
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Basic Usage](#basic-usage)
+    - [Unique values](#unique-values)
+- [Built-in value generators](#built-in-value-generators)
+    - [`fixed`](#fixed)
+    - [`sequence`](#sequence)
+    - [`oneOf`](#oneof)
+    - [`bool`](#bool)
+    - [`unique`](#unique)
+    - [`withPrev`](#withprev)
+- [`postBuild` modifications and classes](#postbuild-modifications-and-classes)
+- [Overrides per-build](#overrides-per-build)
+- [Traits](#traits)
+- [Advanced features](#advanced-features)
+    - [The entire result of the previous build](#retrieving-the-entire-result-of-the-previous-build)
+    - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
+    - [Nested array](#nested-array-of-configurations-with-field-generators)
+    - [Custom generators](#custom-generators)
+- [About TypeScript types](#about-typescript-types)
+
+</details>
+
 ## Motivation
 
 Rather than creating random objects each time you want to test something in your system you can instead use a builder that can create fake data. This keeps your tests consistent and means that they always use data that replicates the real thing. If your tests work off objects close to the real thing they are more useful and there's a higher chance of them finding bugs.
