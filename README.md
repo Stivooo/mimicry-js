@@ -249,7 +249,7 @@ console.log(users);
 userBuilder.one(); // throws Error "No unique options left!"
 ```
 >[!WARNING]
-> If there are no unused values left, `unique` throws an exception. Therefore, it's more appropriate to use this generator primarily in [overrides](#overrides) to control the set of values.
+> If there are no unused values left, `unique` throws an exception. Therefore, it's more appropriate to use this generator primarily in [overrides](#overrides-per-build) to control the set of values.
 
 ### `withPrev`
 
@@ -339,7 +339,7 @@ const user = userBuilder.one({
 });
 
 console.log(user);
-// { id: 1, name: 'John' }
+// { id: 5, name: 'John' }
 ```
 
 If you need to edit the object directly, you can pass in a `postBuild` function when you call the builder. This will be called after Mimicry-js has generated the fake object, and lets you directly change it.
@@ -426,7 +426,7 @@ const support = userBuilder.one({
 });
 ```
 
-So now building an support user is easy:
+So now building a support user is easy:
 
 ```ts
 const support = userBuilder.one({traits: 'support'});
@@ -472,6 +472,55 @@ console.log(customer);
 // { id: 0, name: 'John', role: 'customer', email: 'contact@mail.com' }
 ```
 
+> [!NOTE]
+> You can use [overrides](#overrides-per-build) together with `traits`. In this case, values from `overrides` will override the corresponding ones from `traits`.
+
+## Advanced features
+
+### Retrieving the result of the previous build as a whole
+
+Sometimes we need to generate complex objects with related values. In this case, the builder allows passing fields as a function that returns an object to build and takes the result of the previous call.
+
+For example, in the code below, the `price` field depends on the value of the `count` field. Moreover, the count field `count` changes with each build, so we need access to the result of the previous call.
+
+```ts
+import {build, sequence, oneOf} from 'mimicry-js';
+
+interface Order {
+    count: number;
+    price: number;
+}
+
+const orderBuilder = build({
+    fields: (previousBuild?: Order) => {
+        const count = previousBuild?.count ? previousBuild.count + 1 : 1;
+
+        return {
+            count: sequence((x) => ++x),
+            price: 1000 * count,
+        };
+    },
+});
+
+const orders = orderBuilder.many(3);
+
+console.log(orders);
+// [
+//     { count: 1, price: 1000 },
+//     { count: 2, price: 2000 },
+//     { count: 3, price: 3000 }
+// ]
+```
+
+> [!WARNING]
+> Note that the value of the previous build will always be `undefined` on the first call. \
+> Also, you need to inform the builder about the type of the received argument if a generic type is not specified for the builder itself.
+
+### Deep plain object merging
+
+### Custom generators
+
+## About typing
 
 ## License
 

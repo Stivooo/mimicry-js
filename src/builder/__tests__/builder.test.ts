@@ -3,7 +3,6 @@ import {sequence} from '../../generators/sequence';
 import {oneOf} from '../../generators/oneOf';
 import {fixed} from '../../generators/fixed';
 import {withPrev} from '../../generators/withPrev';
-import {FieldsConfiguration} from '../types';
 import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
 
@@ -137,6 +136,39 @@ describe('builder checks:', () => {
                 new Unit('Y', 10),
                 new Unit('Y', 100),
                 new Unit('Y', 1000),
+            ]);
+        });
+
+        it('should build by using previous build with nested generators', () => {
+            type Unit = {
+                id: number;
+                name: string;
+                value: number;
+                position: {
+                    x: number;
+                    y: number;
+                };
+            };
+
+            const builder = build({
+                fields: (prevBuild?: Unit) => {
+                    const value = prevBuild?.value ?? 1;
+                    return {
+                        id: sequence(),
+                        name: 'X',
+                        value: value * 10,
+                        position: {
+                            x: unique(10, 20, 30),
+                            y: unique(40, 50, 60),
+                        },
+                    };
+                },
+            });
+
+            expect(builder.many(3)).toEqual([
+                {id: 0, name: 'X', value: 10, position: {x: 10, y: 40}},
+                {id: 1, name: 'X', value: 100, position: {x: 20, y: 50}},
+                {id: 2, name: 'X', value: 1000, position: {x: 30, y: 60}},
             ]);
         });
     });
@@ -774,39 +806,5 @@ describe('builder checks:', () => {
 
             expect(() => builder.one()).toThrow('No unique options left!');
         });
-    });
-
-    it('should build', () => {
-        interface User {
-            id: number;
-            name: string;
-            role: 'customer' | 'support' | 'administrator';
-            email?: string;
-        }
-
-        const userBuilder = build<User>({
-            fields: {
-                id: sequence(),
-                name: oneOf('John', 'Andrew', 'Mike'),
-                role: oneOf('customer', 'support', 'administrator'),
-            },
-            traits: {
-                customer: {
-                    overrides: {
-                        role: 'customer',
-                    },
-                },
-                withContactDetails: {
-                    overrides: {
-                        email: 'contact@mail.com',
-                    },
-                },
-            },
-        });
-
-        const support = userBuilder.one({traits: ['customer', 'withContactDetails']});
-
-        console.log(support);
-        // { id: 0, name: 'John', role: 'customer', email: 'contact@mail.com' }
     });
 });

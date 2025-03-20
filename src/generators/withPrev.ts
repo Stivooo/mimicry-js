@@ -10,5 +10,5 @@ export function withPrev<V>(fn: FunctionWithPreviousValue<V>) {
         }
     }
 
-    return generator() as Generator<V, V>;
+    return generator() as Generator<V, never, never>;
 }

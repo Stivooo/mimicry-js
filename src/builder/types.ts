@@ -30,6 +30,16 @@ export type BuildTimeConfig<Result, Trait, MappedResult = Result> = {
     traits?: Trait | Trait[];
 };
 
+export interface Builder<FactoryResult, PostBuildResult = FactoryResult, TraitName extends string = string> {
+    one<Result = PostBuildResult>(buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result>): Result;
+    many<Result = PostBuildResult>(
+        count: number,
+        buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result>,
+    ): Result[];
+}
+
+export type IteratorsConfiguration<T> = {[Key in keyof T]: IteratorsConfiguration<T[Key]> | Iterator<T[Key]>};
+
 export type FreezeKeys<T> = {
     [Key in keyof T as Key]: T[Key];
 };

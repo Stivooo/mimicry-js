@@ -13,4 +13,5 @@ export type {
     FieldsConfiguration,
     FieldsConfigurationGenerator,
     TraitsConfiguration,
+    Overrides,
 } from './builder/types';

@@ -1,4 +1,4 @@
-import {isPlainObject} from '../../typeCheckers/isPlainObject';
+import {isPlainObject} from '../typeCheckers/isPlainObject';
 
 export function deepMerge<T extends Record<string, unknown>, U extends Record<string, unknown>>(
     target: T,

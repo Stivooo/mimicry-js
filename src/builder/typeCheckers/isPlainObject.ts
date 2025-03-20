@@ -1,7 +1,7 @@
 import {isClassInstance} from './isClassInstance';
 import {isIterator} from './isIterator';
 
-export function isPlainObject(obj: unknown): obj is Record<string, unknown> {
+export function isPlainObject<T extends Record<string, unknown>>(obj: unknown): obj is T {
     return (
         !!obj &&
         typeof obj === 'object' &&
