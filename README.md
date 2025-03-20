@@ -11,8 +11,8 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
 
 [![npm version](https://badge.fury.io/js/mimicry-js.svg)](https://badge.fury.io/js/mimicry-js)
 
-### Table of Contents
-<details>
+<details open>
+  <summary>Table of Contents</summary>
 
 - [Motivation](#motivation)
 - [Installation](#installation)
