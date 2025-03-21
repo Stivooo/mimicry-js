@@ -4,7 +4,7 @@
   "description": "TS library for generating fake data for tests",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Stivooo/mimicry-js"
+    "url": "git+https://github.com/Stivooo/mimicry-js.git"
   },
   "author": "Vladimir Rybin <vladimir.rybin.98@gmail.com>",
   "license": "MIT",
@@ -13,7 +13,17 @@
   "types": "./dist/index.d.ts",
   "keywords": [
     "testing",
-    "mocks"
+    "mock",
+    "mock-generator",
+    "fake-data",
+    "test-data",
+    "testing-utils",
+    "object-builder",
+    "type-inference",
+    "iterators",
+    "sequences",
+    "faker",
+    "generator-library"
   ],
   "files": [
     "dist/"
