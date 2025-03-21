@@ -32,7 +32,7 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
 - [Advanced features](#advanced-features)
     - [The entire result of the previous build](#retrieving-the-entire-result-of-the-previous-build)
     - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
-    - [Nested array](#nested-array-of-configurations-with-field-generators)
+    - [Nested arrays](#nested-arrays-of-configurations-with-field-generators)
     - [Custom iterators](#custom-iterators)
 - [About TypeScript types](#about-typescript-types)
 
@@ -680,7 +680,7 @@ console.log(account);
 // }
 ```
 
-### Nested array of configurations with field generators
+### Nested arrays of configurations with field generators
 
 The builder checks the values of arrays in the provided fields to handle nested generators.
 
