@@ -1,0 +1,29 @@
+name: Main Branch CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  checks:
+    name: Run Tests & Lint on Main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Linter
+        run: yarn lint
+
+      - name: Run Tests
+        run: yarn test
