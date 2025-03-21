@@ -63,10 +63,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Revert changes
+      - name: Revert package.json changes
         if: failure()
         run: |
           mv package.json.bak package.json
+          yarn install
           git add package.json yarn.lock
           git commit -m "chore: revert failed release"
           git push origin main

@@ -4,8 +4,8 @@
 
 
 A lightweight and flexible TypeScript library for generating mock data for your tests with predefined structures, \
-functional field generators, traits, and post-processing capabilities.  \
-It makes no assumptions about frameworks or libraries, and can be used with any test runner
+functional and iterable field generators, traits, and post-processing capabilities.  \
+It makes no assumptions about frameworks or libraries, and can be used with any test runner.
 
 **Mimicry-js** was inspired by [test-data-bot](https://github.com/jackfranklin/test-data-bot#readme) and offers more flexibility and advanced TypeScript support.
 
@@ -33,7 +33,7 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
     - [The entire result of the previous build](#retrieving-the-entire-result-of-the-previous-build)
     - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
     - [Nested array](#nested-array-of-configurations-with-field-generators)
-    - [Custom generators](#custom-generators)
+    - [Custom iterators](#custom-iterators)
 - [About TypeScript types](#about-typescript-types)
 
 </details>
@@ -144,7 +144,6 @@ const builder = build({
 });
 ```
 
-
 ## Built-in value generators
 
 ### `fixed`
@@ -240,13 +239,13 @@ import {build, bool} from 'mimicry-js';
 
 const userBuilder = build({
   fields: {
-    isAdmin: bool(),
+    isActive: bool(),
   },
 });
 
 const user = userBuilder.one();
 
-// user.name === true | false
+// user.isActive === true | false
 ```
 
 ### `unique`
@@ -308,6 +307,11 @@ const thirdUser = userBuilder.one();
 > [!WARNING]
 > Keep in mind that on the first call, the value will always be an `undefined`. \
 > Also, you need to inform the builder about the type of the received argument if a generic type is not specified for the builder itself.
+
+___
+> [!NOTE]
+> The builder also supports passing [nested plain objects](#deep-plain-object-merging-in-overrides-and-traits) with generators in fields.
+
 
 ## `postBuild` modifications and classes.
 
@@ -442,7 +446,7 @@ const support = userBuilder.one({traits: 'support'});
 console.log(support);
 // { id: 0, name: 'John', role: 'support', email: 'support@mail.com' }
 ```
-Note that the `support` trait is specified above. As a result, the role and email fields will be overwritten on each call, and we don't have to do this manually using `overrides`:
+Note that the `support` trait is specified above. As a result, the `role` and `email` fields will be overwritten on each call, and we don't have to do this manually using `overrides`:
 
 ```ts
 const support = userBuilder.one({
@@ -548,7 +552,7 @@ console.log(orders);
 
 ### Deep plain object merging in `overrides` and `traits`.
 
-Let's imagine that one of the object's fields is another object that also requires fake data.
+Let's imagine that one of the object's fields is another object that also requires fake data. The builder supports using field generators in nested objects:
 
 ```ts
 import {build, sequence, oneOf} from 'mimicry-js';
@@ -748,9 +752,9 @@ console.log(account);
 > [!WARNING]
 > Note that in this case, you must specify the type to ensure the builder correctly infers types.
 
-### Custom generators
+### Custom iterators
 
-You can also use custom iterators to generate field values:
+You can also use custom [iterators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_generators) to generate field values:
 
 ```ts
 import {build} from 'mimicry-js';
@@ -779,7 +783,7 @@ const [first, second, third] = builder.many(3);
 
 ## About TypeScript types
 
-Mimicry-js is written in TypeScript and ships with the types generated so if you're using TypeScript you will get some nice type support out the box. \
+Mimicry-js is written in TypeScript and ships with the types generated so if you're using TypeScript you will get type support out the box. \
 The builder below, in addition to the object with fields, has a set of traits and a postBuild transformer.
 
 ```ts
