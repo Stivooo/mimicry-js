@@ -55,13 +55,21 @@ jobs:
       - name: Build package
         run: yarn build
 
+      - name: Prepare README for NPM
+        run: |
+          cp README.md README.md.bak
+          sed -i '/^\[!\(WARNING\|NOTE\|IMPORTANT\|TIP\|CAUTION\)\] /d' README.md
+
       - name: Authenticate with npm
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Publish to npm
-        run: yarn publish --access public
+        run: yarn publish --access public --force
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Restore original README
+        run: mv README.md.bak README.md
 
       - name: Revert package.json changes
         if: failure()
