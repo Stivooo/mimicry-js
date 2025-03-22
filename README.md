@@ -274,7 +274,7 @@ console.log(users);
 
 userBuilder.one(); // throws Error "No unique options left!"
 ```
->[!WARNING]
+> [!WARNING]
 > If there are no unused values left, `unique` throws an exception. Therefore, it's more appropriate to use this generator primarily in [overrides](#overrides-per-build) to control the set of values.
 
 ### `withPrev`
