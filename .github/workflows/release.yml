@@ -57,8 +57,7 @@ jobs:
 
       - name: Prepare README for NPM
         run: |
-          cp README.md README.md.bak
-          sed -i '/^\[!\(WARNING\|NOTE\|IMPORTANT\|TIP\|CAUTION\)\] /d' README.md
+          sed -i '/^\s*> \[!\(WARNING\|NOTE\|IMPORTANT\|TIP\|CAUTION\)\]/d' README.md
 
       - name: Authenticate with npm
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
@@ -69,7 +68,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Restore original README
-        run: mv README.md.bak README.md
+        run: |
+          git checkout -- README.md
+          git add README.md
 
       - name: Revert package.json changes
         if: failure()
