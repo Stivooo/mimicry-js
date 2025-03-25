@@ -1,4 +1,5 @@
-import {FixedValue} from '../generators/fixed';
+import type {FixedValue} from '../generators/fixed';
+import type {FieldsGenerator} from '../generators/generate';
 
 export type FunctionalGenerator<T> = () => T;
 
@@ -10,12 +11,32 @@ export type FieldsConfiguration<Result> = {
     readonly [Key in keyof Result]: FieldType<Result[Key]>;
 };
 
-export type FieldsConfigurationGenerator<FactoryResult> = (
+export type FieldsConfigurationFunction<FactoryResult> = (
     prevBuild?: FactoryResult,
 ) => FieldsConfiguration<FactoryResult>;
 
-export type BuilderConfiguration<FactoryResult, PostBuildResult = FactoryResult, TraitName extends string = string> = {
-    readonly fields: FieldsConfiguration<FactoryResult> | FieldsConfigurationGenerator<FactoryResult>;
+export type FieldsConfigurationGenerator<FactoryResult> = Generator<
+    FieldsConfiguration<FactoryResult>,
+    FieldsConfiguration<FactoryResult>,
+    FactoryResult | undefined
+>;
+
+export type FieldsConfigurationGeneratorFunction<FactoryResult, InitialParameters = never> = (
+    initialParameters?: InitialParameters,
+) => FieldsConfigurationGenerator<FactoryResult>;
+
+export type BuilderConfigurationFields<FactoryResult, InitialParameters> =
+    | FieldsConfiguration<FactoryResult>
+    | FieldsConfigurationFunction<FactoryResult>
+    | FieldsGenerator<FactoryResult, InitialParameters>;
+
+export type BuilderConfiguration<
+    FactoryResult,
+    PostBuildResult = FactoryResult,
+    TraitName extends string = string,
+    InitialParameters = never,
+> = {
+    readonly fields: BuilderConfigurationFields<FactoryResult, InitialParameters>;
     readonly traits?: TraitsConfiguration<FactoryResult, TraitName>;
     readonly postBuild?: (x: FactoryResult) => PostBuildResult;
 };
@@ -24,17 +45,25 @@ export type Overrides<Result> = {
     [Key in keyof Result]?: FieldType<Result[Key]> | Overrides<Result[Key]>;
 };
 
-export type BuildTimeConfig<Result, Trait, MappedResult = Result> = {
+export type BuildTimeConfig<Result, Trait, MappedResult = Result, InitialParameters = never> = {
     overrides?: Overrides<Result>;
     postBuild?: (builtThing: Result) => MappedResult;
     traits?: Trait | Trait[];
+    initialParameters?: InitialParameters;
 };
 
-export interface Builder<FactoryResult, PostBuildResult = FactoryResult, TraitName extends string = string> {
-    one<Result = PostBuildResult>(buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result>): Result;
+export interface Builder<
+    FactoryResult,
+    PostBuildResult = FactoryResult,
+    TraitName extends string = string,
+    InitialParameters = never,
+> {
+    one<Result = PostBuildResult>(
+        buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result, InitialParameters>,
+    ): Result;
     many<Result = PostBuildResult>(
         count: number,
-        buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result>,
+        buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result, InitialParameters>,
     ): Result[];
 }
 
@@ -44,11 +73,9 @@ export type FreezeKeys<T> = {
     [Key in keyof T as Key]: T[Key];
 };
 
-export type TraitsConfiguration<FactoryResultType, TraitName extends string> = {
+export type TraitsConfiguration<FactoryResultType, TraitName extends string = string> = {
     [key in TraitName]: {overrides?: Overrides<FreezeKeys<FactoryResultType>>};
 };
-
-export type ExtractTraitsNames<Config> = Config extends BuilderConfiguration<any, any, infer Traits> ? Traits : never;
 
 export type Mutable<T> = {
     -readonly [Key in keyof T]: T[Key];

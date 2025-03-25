@@ -5,6 +5,8 @@ import {fixed} from '../../generators/fixed';
 import {withPrev} from '../../generators/withPrev';
 import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
+import {generate} from '../../generators/generate';
+import {FieldsConfigurationGeneratorFunction} from '../types';
 
 interface IProfileData {
     firstName: string;
@@ -770,6 +772,98 @@ describe('builder checks:', () => {
                     },
                 },
             ]);
+        });
+    });
+
+    describe('builders with Generator fields configurations', () => {
+        it('should build by fields configuration Generator without initials', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            result: ++incr,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3);
+
+            expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
+        });
+
+        it('should build by fields configuration Generator with few initials', () => {
+            const builder = build({
+                fields: generate(function* (a: number, b: string) {
+                    let prev = a;
+
+                    while (true) {
+                        prev = prev + a;
+                        yield {
+                            result: `${b} ${prev}`,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [1, 'result'],
+            });
+
+            expect(result).toEqual([{result: 'result 2'}, {result: 'result 3'}, {result: 'result 4'}]);
+        });
+
+        it('should build by fields configuration Generator with initial object', () => {
+            const builder = build({
+                fields: generate(function* (initials: {a: number; b: string}) {
+                    const {a = 0, b = ''} = initials ?? {};
+                    let prev = a;
+
+                    while (true) {
+                        prev = prev + a;
+                        yield {
+                            result: `${b} ${prev}`,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [
+                    {
+                        a: 1,
+                        b: 'result',
+                    },
+                ],
+            });
+
+            expect(result).toEqual([{result: 'result 2'}, {result: 'result 3'}, {result: 'result 4'}]);
+        });
+
+        it('should has access to previous build result', () => {
+            type Result = {
+                result: number;
+            };
+
+            const builder = build({
+                fields: generate(function* () {
+                    let incr = 1;
+
+                    while (true) {
+                        const prev = yield {
+                            result: incr,
+                        };
+
+                        incr = prev ? prev.result + 1 : 0;
+                    }
+                } as FieldsConfigurationGeneratorFunction<Result>),
+            });
+
+            const result = builder.many(3);
+
+            expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
         });
     });
 

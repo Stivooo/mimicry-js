@@ -11,7 +11,9 @@ export type {
     BuilderConfiguration,
     BuildTimeConfig,
     FieldsConfiguration,
+    FieldsConfigurationFunction,
     FieldsConfigurationGenerator,
+    FieldsConfigurationGeneratorFunction,
     TraitsConfiguration,
     Overrides,
 } from './builder/types';
