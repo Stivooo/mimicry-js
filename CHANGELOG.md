@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add default type value for TraitName in `TraitsConfiguration`
 
 ### Added
-- Add `generate` decorator for fields generation using `GeneratorFunction`
+- Add `generate` decorator for fields generation [using `GeneratorFunction`](https://github.com/Stivooo/mimicry-js/tree/main?tab=readme-ov-file#using-generatorfunction-to-create-fields)
 
 ## [1.0.2] - 2025-03-22
 ### Fixed
