@@ -21,11 +21,11 @@ export type FieldsConfigurationGenerator<FactoryResult> = Generator<
     FactoryResult | undefined
 >;
 
-export type FieldsConfigurationGeneratorFunction<FactoryResult, InitialParameters = never> = (
-    initialParameters?: InitialParameters,
+export type FieldsConfigurationGeneratorFunction<FactoryResult, InitialParameters extends any[] = never> = (
+    ...initialParameters: InitialParameters
 ) => FieldsConfigurationGenerator<FactoryResult>;
 
-export type BuilderConfigurationFields<FactoryResult, InitialParameters> =
+export type BuilderConfigurationFields<FactoryResult, InitialParameters extends any[] = never> =
     | FieldsConfiguration<FactoryResult>
     | FieldsConfigurationFunction<FactoryResult>
     | FieldsGenerator<FactoryResult, InitialParameters>;
@@ -34,7 +34,7 @@ export type BuilderConfiguration<
     FactoryResult,
     PostBuildResult = FactoryResult,
     TraitName extends string = string,
-    InitialParameters = never,
+    InitialParameters extends any[] = never,
 > = {
     readonly fields: BuilderConfigurationFields<FactoryResult, InitialParameters>;
     readonly traits?: TraitsConfiguration<FactoryResult, TraitName>;
@@ -45,7 +45,7 @@ export type Overrides<Result> = {
     [Key in keyof Result]?: FieldType<Result[Key]> | Overrides<Result[Key]>;
 };
 
-export type BuildTimeConfig<Result, Trait, MappedResult = Result, InitialParameters = never> = {
+export type BuildTimeConfig<Result, Trait, MappedResult = Result, InitialParameters extends any[] = never> = {
     overrides?: Overrides<Result>;
     postBuild?: (builtThing: Result) => MappedResult;
     traits?: Trait | Trait[];
@@ -56,7 +56,7 @@ export interface Builder<
     FactoryResult,
     PostBuildResult = FactoryResult,
     TraitName extends string = string,
-    InitialParameters = never,
+    InitialParameters extends any[] = never,
 > {
     one<Result = PostBuildResult>(
         buildTimeConfig?: BuildTimeConfig<FactoryResult, TraitName, Result, InitialParameters>,

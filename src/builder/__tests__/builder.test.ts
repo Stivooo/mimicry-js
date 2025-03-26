@@ -776,7 +776,7 @@ describe('builder checks:', () => {
     });
 
     describe('builders with Generator fields configurations', () => {
-        it('should build by fields configuration Generator without initials', () => {
+        it('should build by fields configuration Generator without initial parameters', () => {
             const builder = build({
                 fields: generate(function* () {
                     let incr = 0;
@@ -794,15 +794,15 @@ describe('builder checks:', () => {
             expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
         });
 
-        it('should build by fields configuration Generator with few initials', () => {
+        it('should build by fields configuration Generator with few initial parameters', () => {
             const builder = build({
-                fields: generate(function* (a: number, b: string) {
+                fields: generate(function* (a: number, b: string, c: boolean = true) {
                     let prev = a;
 
                     while (true) {
                         prev = prev + a;
                         yield {
-                            result: `${b} ${prev}`,
+                            result: `${b} ${prev} ${c}`,
                         };
                     }
                 }),
@@ -812,13 +812,13 @@ describe('builder checks:', () => {
                 initialParameters: [1, 'result'],
             });
 
-            expect(result).toEqual([{result: 'result 2'}, {result: 'result 3'}, {result: 'result 4'}]);
+            expect(result).toEqual([{result: 'result 2 true'}, {result: 'result 3 true'}, {result: 'result 4 true'}]);
         });
 
         it('should build by fields configuration Generator with initial object', () => {
             const builder = build({
-                fields: generate(function* (initials: {a: number; b: string}) {
-                    const {a = 0, b = ''} = initials ?? {};
+                fields: generate(function* (initialValues: {a: number; b: string}) {
+                    const {a = 0, b = ''} = initialValues ?? {};
                     let prev = a;
 
                     while (true) {
@@ -852,13 +852,13 @@ describe('builder checks:', () => {
                     let incr = 1;
 
                     while (true) {
-                        const prev = yield {
+                        const prev: Result = yield {
                             result: incr,
                         };
 
                         incr = prev ? prev.result + 1 : 0;
                     }
-                } as FieldsConfigurationGeneratorFunction<Result>),
+                }),
             });
 
             const result = builder.many(3);

@@ -19,13 +19,9 @@ import {map} from './utils/map';
 import {extractTraits} from './utils/extractTraits';
 import {extractOverrides} from './__tests__/extractOverrides';
 import {extractFieldsConfiguration} from './utils/extractFieldsConfiguration';
+import {extractInitialParameters} from './utils/extractInitialParameters';
 
-function createBuilder<
-    Origin,
-    Fields = Origin,
-    Trait extends string = string,
-    InitialParameters extends Array<any> = never,
->(
+function createBuilder<Origin, Fields = Origin, Trait extends string = string, InitialParameters extends any[] = never>(
     config: BuilderConfiguration<Origin, Fields, Trait, InitialParameters>,
 ): Builder<Origin, Fields, Trait, InitialParameters> {
     const fieldsConfiguration = extractFieldsConfiguration(config.fields);
@@ -35,7 +31,7 @@ function createBuilder<
 
     let definedIterators: IteratorsConfiguration<Origin> | null = null;
     let previousBuildFields: Origin | undefined;
-    let fieldsConfigurationIterator: FieldsConfigurationGenerator<Origin> | null = null;
+    let fieldsConfigurationGenerator: FieldsConfigurationGenerator<Origin> | null = null;
 
     const mapFieldsWithOverrides = <Fields = Origin, MapperBuild = Fields>(
         fields: FieldsConfiguration<Fields>,
@@ -125,24 +121,23 @@ function createBuilder<
     const build = <MapperBuild = Fields>(
         buildConfig?: BuildTimeConfig<Origin, Trait, MapperBuild, InitialParameters>,
     ) => {
-        let builderFields;
+        let fieldsForProcessing;
 
         if (fieldsConfiguration.originFieldsFunction) {
             const configFields = fieldsConfiguration.originFieldsFunction(previousBuildFields);
-            builderFields = deepMerge(configFields, extractIterators(configFields));
+            fieldsForProcessing = deepMerge(configFields, extractIterators(configFields));
         } else if (fieldsConfiguration.originFieldsGenerator) {
-            if (fieldsConfigurationIterator === null) {
-                fieldsConfigurationIterator = fieldsConfiguration.originFieldsGenerator(
-                    ...(buildConfig?.initialParameters ?? []),
-                );
+            if (fieldsConfigurationGenerator === null) {
+                const initialParameters = extractInitialParameters(buildConfig?.initialParameters);
+                fieldsConfigurationGenerator = fieldsConfiguration.originFieldsGenerator(...initialParameters);
             }
 
-            builderFields = fieldsConfigurationIterator.next(previousBuildFields).value;
+            fieldsForProcessing = fieldsConfigurationGenerator.next(previousBuildFields).value;
         } else {
-            builderFields = fieldsConfiguration.originFields;
+            fieldsForProcessing = fieldsConfiguration.originFields;
         }
 
-        const fields = mapFieldsWithOverrides(builderFields, buildConfig);
+        const fields = mapFieldsWithOverrides(fieldsForProcessing, buildConfig);
 
         previousBuildFields = fields as Origin;
 

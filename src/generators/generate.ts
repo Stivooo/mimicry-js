@@ -2,7 +2,7 @@ import {FieldsConfigurationGeneratorFunction} from '../builder/types';
 
 declare const FieldsGeneratorBrand: unique symbol;
 
-export class FieldsGenerator<FactoryResult, InitialParameters> {
+export class FieldsGenerator<FactoryResult, InitialParameters extends any[]> {
     [FieldsGeneratorBrand]: void;
     generator: FieldsConfigurationGeneratorFunction<FactoryResult, InitialParameters>;
 
@@ -11,13 +11,9 @@ export class FieldsGenerator<FactoryResult, InitialParameters> {
     }
 }
 
-type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<infer R, never>
-    ? R
-    : T extends (...args: any[]) => Generator<never, infer R>
-      ? R
-      : never;
+type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<infer R, never> ? R : never;
 
-type ExtractGeneratorParameters<F> = F extends (...params: void[]) => Generator
+type ExtractGeneratorParameters<F> = F extends (...args: void[]) => Generator
     ? never
     : F extends (...args: [...infer P]) => Generator
       ? P
@@ -27,9 +23,9 @@ type GeneratorFunction = (...args: any[]) => Generator;
 
 export function generate<Gn extends GeneratorFunction>(generator: Gn) {
     type Result = ExtractGeneratorResult<Gn>;
-    type Initials = ExtractGeneratorParameters<Gn>;
-    type FieldsGeneratorFunction = FieldsConfigurationGeneratorFunction<Result, Initials>;
-    type FieldsGeneratorAlias = FieldsGenerator<Result, Initials>;
+    type Parameters = ExtractGeneratorParameters<Gn>;
+    type FieldsGeneratorFunction = FieldsConfigurationGeneratorFunction<Result, Parameters>;
+    type FieldsGeneratorAlias = FieldsGenerator<Result, Parameters>;
 
     return new FieldsGenerator(generator as FieldsGeneratorFunction) as FieldsGeneratorAlias;
 }

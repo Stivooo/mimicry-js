@@ -8,7 +8,7 @@ import {isPlainObject} from '../typeCheckers/isPlainObject';
 import {isFieldsGenerator} from '../../generators/generate';
 import {isFunction} from '../typeCheckers/isFunction';
 
-export const extractFieldsConfiguration = <Origin, InitialParameters = never>(
+export const extractFieldsConfiguration = <Origin, InitialParameters extends any[] = never>(
     fields: BuilderConfigurationFields<Origin, InitialParameters>,
 ): {
     originFields: FieldsConfiguration<Origin>;
