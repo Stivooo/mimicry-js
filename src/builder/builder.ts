@@ -43,7 +43,7 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string, I
                 if (!traits?.[traitKey]) {
                     console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
                 }
-                const traitsConfig = traits ? traits[traitKey] : ({} as TraitsConfiguration<Origin, string>);
+                const traitsConfig = traits ? traits[traitKey] : ({} as TraitsConfiguration<Origin>);
                 const currentTraitOverrides = traitsConfig.overrides ?? {};
                 return deepMerge(traitsOverrides, currentTraitOverrides);
             },
@@ -124,15 +124,15 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string, I
         let fieldsForProcessing;
 
         if (fieldsConfiguration.originFieldsFunction) {
-            const configFields = fieldsConfiguration.originFieldsFunction(previousBuildFields);
-            fieldsForProcessing = deepMerge(configFields, extractIterators(configFields));
+            const iterationFields = fieldsConfiguration.originFieldsFunction(previousBuildFields);
+            fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
         } else if (fieldsConfiguration.originFieldsGenerator) {
             if (fieldsConfigurationGenerator === null) {
                 const initialParameters = extractInitialParameters(buildConfig?.initialParameters);
                 fieldsConfigurationGenerator = fieldsConfiguration.originFieldsGenerator(...initialParameters);
             }
-
-            fieldsForProcessing = fieldsConfigurationGenerator.next(previousBuildFields).value;
+            const iterationFields = fieldsConfigurationGenerator.next(previousBuildFields).value;
+            fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
         } else {
             fieldsForProcessing = fieldsConfiguration.originFields;
         }

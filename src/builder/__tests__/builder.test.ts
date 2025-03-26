@@ -6,7 +6,7 @@ import {withPrev} from '../../generators/withPrev';
 import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
 import {generate} from '../../generators/generate';
-import {FieldsConfigurationGeneratorFunction} from '../types';
+import {FieldsConfiguration, FieldsConfigurationGeneratorFunction} from '../types';
 
 interface IProfileData {
     firstName: string;
@@ -848,7 +848,7 @@ describe('builder checks:', () => {
             };
 
             const builder = build({
-                fields: generate(function* () {
+                fields: generate(function* (a: string = '') {
                     let incr = 1;
 
                     while (true) {
@@ -864,6 +864,98 @@ describe('builder checks:', () => {
             const result = builder.many(3);
 
             expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
+        });
+
+        it('should build by fields configuration Generator with nested fields generators', () => {
+            type Structure = {
+                result: number;
+                attrs: {
+                    name: string;
+                };
+            };
+
+            const builder = build({
+                fields: generate(function* (incr: number) {
+                    while (true) {
+                        const structure: FieldsConfiguration<Structure> = {
+                            result: sequence((x) => x + incr),
+                            attrs: {
+                                name: unique('A', 'B', 'C'),
+                            },
+                        };
+                        yield structure;
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [1],
+            });
+
+            expect(result).toEqual([
+                {result: 1, attrs: {name: 'A'}},
+                {result: 2, attrs: {name: 'B'}},
+                {result: 3, attrs: {name: 'C'}},
+            ]);
+        });
+
+        it('should build by fields configuration Generator with overrides', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            name: oneOf('A', 'B', 'C'),
+                            result: ++incr,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                overrides: {
+                    name: 'D',
+                },
+            });
+
+            expect(result).toEqual([
+                {result: 1, name: 'D'},
+                {result: 2, name: 'D'},
+                {result: 3, name: 'D'},
+            ]);
+        });
+
+        it('should build by fields configuration Generator with traits', () => {
+            const builder = build({
+                fields: generate(function* (a: number = 0) {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            name: oneOf('A', 'B', 'C'),
+                            result: ++incr,
+                        };
+                    }
+                }),
+                traits: {
+                    D: {
+                        overrides: {
+                            name: 'D',
+                        },
+                    },
+                },
+            });
+
+            const result = builder.many(3, {
+                traits: 'D',
+            });
+
+            expect(result).toEqual([
+                {result: 1, name: 'D'},
+                {result: 2, name: 'D'},
+                {result: 3, name: 'D'},
+            ]);
         });
     });
 

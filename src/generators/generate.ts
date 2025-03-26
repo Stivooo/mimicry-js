@@ -1,4 +1,4 @@
-import {FieldsConfigurationGeneratorFunction} from '../builder/types';
+import {FieldsConfiguration, FieldsConfigurationGeneratorFunction} from '../builder/types';
 
 declare const FieldsGeneratorBrand: unique symbol;
 
@@ -11,7 +11,9 @@ export class FieldsGenerator<FactoryResult, InitialParameters extends any[]> {
     }
 }
 
-type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<infer R, never> ? R : never;
+type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<FieldsConfiguration<infer R>, never>
+    ? R
+    : never;
 
 type ExtractGeneratorParameters<F> = F extends (...args: void[]) => Generator
     ? never
