@@ -18,22 +18,24 @@ import {isPlainObject} from './typeCheckers/isPlainObject';
 import {map} from './utils/map';
 import {extractTraits} from './utils/extractTraits';
 import {extractOverrides} from './__tests__/extractOverrides';
+import {extractFieldsConfiguration} from './utils/extractFieldsConfiguration';
+import {extractInitialParameters} from './utils/extractInitialParameters';
 
-function createBuilder<Origin, Fields = Origin, Trait extends string = string>(
-    config: BuilderConfiguration<Origin, Fields, Trait>,
-): Builder<Origin, Fields, Trait> {
-    const originFieldsGenerator: FieldsConfigurationGenerator<Origin> | null =
-        typeof config.fields === 'function' ? config.fields : null;
-    const originFields = (typeof config.fields === 'object' ? config.fields : {}) as FieldsConfiguration<Origin>;
+function createBuilder<Origin, Fields = Origin, Trait extends string = string, InitialParameters extends any[] = never>(
+    config: BuilderConfiguration<Origin, Fields, Trait, InitialParameters>,
+): Builder<Origin, Fields, Trait, InitialParameters> {
+    const fieldsConfiguration = extractFieldsConfiguration(config.fields);
+
     const traits: TraitsConfiguration<Origin, Trait> | undefined = config.traits;
     const postBuild: ((x: Origin) => Fields) | undefined = config.postBuild;
 
     let definedIterators: IteratorsConfiguration<Origin> | null = null;
     let previousBuildFields: Origin | undefined;
+    let fieldsConfigurationGenerator: FieldsConfigurationGenerator<Origin> | null = null;
 
     const mapFieldsWithOverrides = <Fields = Origin, MapperBuild = Fields>(
         fields: FieldsConfiguration<Fields>,
-        buildConfig?: BuildTimeConfig<Fields, Trait, MapperBuild>,
+        buildConfig?: BuildTimeConfig<Fields, Trait, MapperBuild, InitialParameters>,
     ) => {
         const buildOverrides = extractOverrides(buildConfig);
         const buildTraitsOverrides = extractTraits(buildConfig).reduce<Overrides<Fields>>(
@@ -41,7 +43,7 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string>(
                 if (!traits?.[traitKey]) {
                     console.warn(`Trait "${String(traitKey)}" is not specified in buildConfig!`);
                 }
-                const traitsConfig = traits ? traits[traitKey] : ({} as TraitsConfiguration<Origin, string>);
+                const traitsConfig = traits ? traits[traitKey] : ({} as TraitsConfiguration<Origin>);
                 const currentTraitOverrides = traitsConfig.overrides ?? {};
                 return deepMerge(traitsOverrides, currentTraitOverrides);
             },
@@ -116,17 +118,26 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string>(
         return field;
     };
 
-    const build = <MapperBuild = Fields>(buildConfig?: BuildTimeConfig<Origin, Trait, MapperBuild>) => {
-        let builderFields;
+    const build = <MapperBuild = Fields>(
+        buildConfig?: BuildTimeConfig<Origin, Trait, MapperBuild, InitialParameters>,
+    ) => {
+        let fieldsForProcessing;
 
-        if (originFieldsGenerator) {
-            const configFields = originFieldsGenerator(previousBuildFields);
-            builderFields = deepMerge(configFields, extractIterators(configFields));
+        if (fieldsConfiguration.originFieldsFunction) {
+            const iterationFields = fieldsConfiguration.originFieldsFunction(previousBuildFields);
+            fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
+        } else if (fieldsConfiguration.originFieldsGenerator) {
+            if (fieldsConfigurationGenerator === null) {
+                const initialParameters = extractInitialParameters(buildConfig?.initialParameters);
+                fieldsConfigurationGenerator = fieldsConfiguration.originFieldsGenerator(...initialParameters);
+            }
+            const iterationFields = fieldsConfigurationGenerator.next(previousBuildFields).value;
+            fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
         } else {
-            builderFields = originFields;
+            fieldsForProcessing = fieldsConfiguration.originFields;
         }
 
-        const fields = mapFieldsWithOverrides(builderFields, buildConfig);
+        const fields = mapFieldsWithOverrides(fieldsForProcessing, buildConfig);
 
         previousBuildFields = fields as Origin;
 
@@ -135,8 +146,12 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string>(
     };
 
     return {
-        one: <Result = Fields>(buildConfig?: BuildTimeConfig<Origin, Trait, Result>) => build(buildConfig),
-        many: <Result = Fields>(count: number, buildConfig?: BuildTimeConfig<Origin, Trait, Result>) =>
+        one: <Result = Fields>(buildConfig?: BuildTimeConfig<Origin, Trait, Result, InitialParameters>) =>
+            build(buildConfig),
+        many: <Result = Fields>(
+            count: number,
+            buildConfig?: BuildTimeConfig<Origin, Trait, Result, InitialParameters>,
+        ) =>
             Array(count)
                 .fill(0)
                 .map(() => build(buildConfig)),

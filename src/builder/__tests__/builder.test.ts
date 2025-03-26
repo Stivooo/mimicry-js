@@ -5,6 +5,8 @@ import {fixed} from '../../generators/fixed';
 import {withPrev} from '../../generators/withPrev';
 import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
+import {generate} from '../../generators/generate';
+import {FieldsConfiguration} from '../types';
 
 interface IProfileData {
     firstName: string;
@@ -769,6 +771,190 @@ describe('builder checks:', () => {
                         },
                     },
                 },
+            ]);
+        });
+    });
+
+    describe('builders with Generator fields configurations', () => {
+        it('should build by fields configuration Generator without initial parameters', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            result: ++incr,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3);
+
+            expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
+        });
+
+        it('should build by fields configuration Generator with few initial parameters', () => {
+            const builder = build({
+                fields: generate(function* (a: number, b: string, c: boolean = true) {
+                    let prev = a;
+
+                    while (true) {
+                        prev = prev + a;
+                        yield {
+                            result: `${b} ${prev} ${c}`,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [1, 'result'],
+            });
+
+            expect(result).toEqual([{result: 'result 2 true'}, {result: 'result 3 true'}, {result: 'result 4 true'}]);
+        });
+
+        it('should build by fields configuration Generator with initial object', () => {
+            const builder = build({
+                fields: generate(function* (initialValues: {a: number; b: string}) {
+                    const {a = 0, b = ''} = initialValues ?? {};
+                    let prev = a;
+
+                    while (true) {
+                        prev = prev + a;
+                        yield {
+                            result: `${b} ${prev}`,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [
+                    {
+                        a: 1,
+                        b: 'result',
+                    },
+                ],
+            });
+
+            expect(result).toEqual([{result: 'result 2'}, {result: 'result 3'}, {result: 'result 4'}]);
+        });
+
+        it('should has access to previous build result', () => {
+            type Result = {
+                result: number;
+            };
+
+            const builder = build({
+                fields: generate(function* (a: string = '') {
+                    let incr = 1;
+
+                    while (true) {
+                        const prev: Result = yield {
+                            result: incr,
+                        };
+
+                        incr = prev ? prev.result + 1 : 0;
+                    }
+                }),
+            });
+
+            const result = builder.many(3);
+
+            expect(result).toEqual([{result: 1}, {result: 2}, {result: 3}]);
+        });
+
+        it('should build by fields configuration Generator with nested fields generators', () => {
+            type Structure = {
+                result: number;
+                attrs: {
+                    name: string;
+                };
+            };
+
+            const builder = build({
+                fields: generate(function* (incr: number) {
+                    while (true) {
+                        const structure: FieldsConfiguration<Structure> = {
+                            result: sequence((x) => x + incr),
+                            attrs: {
+                                name: unique('A', 'B', 'C'),
+                            },
+                        };
+                        yield structure;
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                initialParameters: [1],
+            });
+
+            expect(result).toEqual([
+                {result: 1, attrs: {name: 'A'}},
+                {result: 2, attrs: {name: 'B'}},
+                {result: 3, attrs: {name: 'C'}},
+            ]);
+        });
+
+        it('should build by fields configuration Generator with overrides', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            name: oneOf('A', 'B', 'C'),
+                            result: ++incr,
+                        };
+                    }
+                }),
+            });
+
+            const result = builder.many(3, {
+                overrides: {
+                    name: 'D',
+                },
+            });
+
+            expect(result).toEqual([
+                {result: 1, name: 'D'},
+                {result: 2, name: 'D'},
+                {result: 3, name: 'D'},
+            ]);
+        });
+
+        it('should build by fields configuration Generator with traits', () => {
+            const builder = build({
+                fields: generate(function* (a: number = 0) {
+                    let incr = 0;
+
+                    while (true) {
+                        yield {
+                            name: oneOf('A', 'B', 'C'),
+                            result: ++incr,
+                        };
+                    }
+                }),
+                traits: {
+                    D: {
+                        overrides: {
+                            name: 'D',
+                        },
+                    },
+                },
+            });
+
+            const result = builder.many(3, {
+                traits: 'D',
+            });
+
+            expect(result).toEqual([
+                {result: 1, name: 'D'},
+                {result: 2, name: 'D'},
+                {result: 3, name: 'D'},
             ]);
         });
     });
