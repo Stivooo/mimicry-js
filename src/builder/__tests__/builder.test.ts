@@ -6,7 +6,7 @@ import {withPrev} from '../../generators/withPrev';
 import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
 import {generate} from '../../generators/generate';
-import {FieldsConfiguration, FieldsConfigurationGeneratorFunction} from '../types';
+import {FieldsConfiguration} from '../types';
 
 interface IProfileData {
     firstName: string;

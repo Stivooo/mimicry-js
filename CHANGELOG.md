@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-03-26
+### Fixed
+- Add default type value for TraitName in `TraitsConfiguration`
+
+### Added
+- Add `generate` decorator for fields generation using `GeneratorFunction`
+
 ## [1.0.2] - 2025-03-22
 ### Fixed
 - Fix the `release.yml` CI for correct archive building and README update.

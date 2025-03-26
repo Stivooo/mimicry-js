@@ -11,7 +11,7 @@ export class FieldsGenerator<FactoryResult, InitialParameters extends any[]> {
     }
 }
 
-type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<FieldsConfiguration<infer R>, never>
+type ExtractGeneratorResult<T> = T extends (...args: any[]) => Generator<FieldsConfiguration<infer R>, never | void>
     ? R
     : never;
 

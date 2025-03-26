@@ -30,7 +30,11 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
 - [Overrides per-build](#overrides-per-build)
 - [Traits](#traits)
 - [Advanced features](#advanced-features)
-    - [The entire result of the previous build](#retrieving-the-entire-result-of-the-previous-build)
+    - [Getting the entire result of the previous build](#getting-the-entire-result-of-the-previous-build)
+    - [Using `GeneratorFunction` to create `fields`](#using-generatorfunction-to-create-fields)
+      - [Passing `initialParameters`](#passing-initialparameters-to-the-generator-function)
+      - [Using fields generators](#using-fields-generators)
+      - [Getting the result of the previous build](#getting-the-result-of-the-previous-build)
     - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
     - [Nested arrays](#nested-arrays-of-configurations-with-field-generators)
     - [Custom iterators](#custom-iterators)
@@ -508,7 +512,7 @@ console.log(customer);
 
 ## Advanced features
 
-### Retrieving the entire result of the previous build
+### Getting the entire result of the previous build
 
 Sometimes we need to generate complex objects with related values. In this case, the builder allows passing fields as a function that returns an object to build and takes the result of the previous call.
 
@@ -549,6 +553,193 @@ console.log(orders);
 
 > [!NOTE]
 > The builder preserves iterators after the first function call and continues using them instead of creating new ones, even though the function passed as `fields` is called each time.
+
+### Using `GeneratorFunction` to create `fields`
+
+If you need more control when creating objects, you can use [_generator functions_](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*). This allows you to define and manage the generation logic at each iteration.
+
+For this, Mimicry-js provides the `generate` decorator, which expects a generator function as an argument:
+
+```ts
+import {build, generate} from 'mimicry-js';
+
+function* timePeriodsGenerator() {
+  let currentStart = new Date().getTime();
+  const periodDurationHs = 6;
+  const periodDurationMs = periodDurationHs * 60 * 60 * 1000; // Hours value in milliseconds
+
+  while (true) {
+    const currentEnd = currentStart + periodDurationMs;
+    yield {start: new Date(currentStart), end: new Date(currentEnd)};
+    currentStart = currentEnd;
+  }
+}
+
+const builder = build({
+  fields: generate(timePeriodsGenerator),
+});
+
+const periods = builder.many(3);
+
+console.log(periods);
+// [
+//     { start: 2025-03-26T11:39:08.147Z, end: 2025-03-26T17:39:08.147Z },
+//     { start: 2025-03-26T17:39:08.147Z, end: 2025-03-26T23:39:08.147Z },
+//     { start: 2025-03-26T23:39:08.147Z, end: 2025-03-27T05:39:08.147Z }
+// ]
+```
+
+> [!TIP]
+> In this case, you can also use [overrides](#overrides-per-build) and [traits](#traits).
+
+#### Passing `initialParameters` to the generator function
+
+It can be very useful to pass some initial values to the generator function at the moment of object generation. \
+So, `buildTimeConfig` has an optional `initialParameters` field, which accepts a tuple of arguments taken by the generator function:
+
+```ts
+import {build, generate} from 'mimicry-js';
+
+function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
+  let currentStart = currentStartDate.getTime();
+
+  while (true) {
+    const currentEnd = currentStart + periodDurationInMs;
+    yield {start: new Date(currentStart), end: new Date(currentEnd)};
+    currentStart = currentEnd;
+  }
+}
+
+const builder = build({
+  fields: generate(timePeriodsGenerator),
+});
+
+const start = new Date('2025-01-01');
+const duration = 24 * 60 * 60 * 1000;
+
+const periods = builder.many(3, {
+  initialParameters: [start, duration],
+});
+
+console.log(periods);
+// [
+//     { start: 2025-01-01T00:00:00.000Z, end: 2025-01-02T00:00:00.000Z },
+//     { start: 2025-01-02T00:00:00.000Z, end: 2025-01-03T00:00:00.000Z },
+//     { start: 2025-01-03T00:00:00.000Z, end: 2025-01-04T00:00:00.000Z }
+// ]
+```
+
+> [!TIP]
+> With `generate`, the builder can validate the types of `initialParameters`.
+> ```ts
+> // TS2322: Type [] is not assignable to type
+> // [currentStartDate: Date, periodDurationInMs: number]
+> // Source has 0 element(s) but target requires 2
+> const periods = builder.many(3, {
+>   initialParameters: [],
+> });
+> ```
+
+#### Using fields generators
+
+You can still use [generators](#built-in-value-generators) and [functions](#unique-values) to create field values:
+
+```ts
+import {build, generate, oneOf} from 'mimicry-js';
+
+function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
+  let currentStart = currentStartDate.getTime();
+
+  while (true) {
+    const currentEnd = currentStart + periodDurationInMs;
+    yield {
+      start: new Date(currentStart),
+      end: new Date(currentEnd),
+      type: oneOf('open', 'closed')
+    };
+    currentStart = currentEnd;
+  }
+}
+
+const builder = build({
+  fields: generate(timePeriodsGenerator),
+});
+
+const start = new Date('2025-01-01');
+const duration = 24 * 60 * 60 * 1000;
+
+const periods = builder.many(3, {
+  initialParameters: [start, duration],
+});
+
+console.log(periods);
+// [
+//     {
+//         start: 2025-01-01T00:00:00.000Z,
+//         end: 2025-01-02T00:00:00.000Z,
+//         type: 'open'
+//     },
+//     {
+//         start: 2025-01-02T00:00:00.000Z,
+//         end: 2025-01-03T00:00:00.000Z,
+//         type: 'closed'
+//     },
+//     {
+//         start: 2025-01-03T00:00:00.000Z,
+//         end: 2025-01-04T00:00:00.000Z,
+//         type: 'open'
+//     }
+// ]
+```
+
+> [!NOTE]
+> The builder preserves iterators after the first _generator function_ iteration and continues using them instead of creating new ones.
+
+#### Getting the result of the previous build
+
+You can also get the result of the previous build:
+
+```ts
+import {build, generate} from 'mimicry-js';
+
+type Period = {
+    start: Date;
+    end: Date;
+};
+
+function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
+    let currentStart = currentStartDate.getTime();
+
+    while (true) {
+        const previousBuildResult: Period = yield {
+            start: new Date(currentStart),
+            end: new Date(currentStart + periodDurationInMs),
+        };
+        currentStart = previousBuildResult.end.getTime();
+    }
+}
+
+const builder = build({
+    fields: generate(timePeriodsGenerator),
+});
+
+const start = new Date('2025-01-01');
+const duration = 24 * 60 * 60 * 1000;
+
+const periods = builder.many(3, {
+    initialParameters: [start, duration],
+});
+
+console.log(periods);
+// [
+//     { start: 2025-01-01T00:00:00.000Z, end: 2025-01-02T00:00:00.000Z },
+//     { start: 2025-01-02T00:00:00.000Z, end: 2025-01-03T00:00:00.000Z },
+//     { start: 2025-01-03T00:00:00.000Z, end: 2025-01-04T00:00:00.000Z }
+// ]
+```
+
+> [!IMPORTANT]
+> You need to specify the type of the value received via `yield` manually.
 
 ### Deep plain object merging in `overrides` and `traits`.
 
@@ -829,19 +1020,22 @@ const builder: Builder<{
     firstName: string
     lastName: string
     age: number
-}, Profile, "younger" | "older">
+}, Profile, "younger" | "older", never>
 ```
+
+> [!TIP]
+> The `never` type at the end indicates the type of [`initialParameters`](#passing-initialparameters-to-the-generator-function) when [using GeneratorFunction](#using-generatorfunction-to-create-fields) to create fields.
 
 So, in most situations, types don’t need to be specified manually, except for cases with generators in [nested objects](#deep-plain-object-merging-in-overrides-and-traits) and [arrays](#nested-array-of-configurations-with-field-generators).
 
 > [!IMPORTANT]
-> If you manually specify the builder object's generic, the builder loses information about the specific `traits` names (the type becomes `string`). This is due to TypeScript's behavior: default values are used for all generics if even one of them is provided.
+> If you manually specify the builder object's generic, the builder loses information about the specific [`traits`](#traits) names (the type becomes `string`) and [`initialParameters`](#passing-initialparameters-to-the-generator-function) (the type becomes `never`). This is due to TypeScript's behavior: default values are used for all generics if even one of them is provided.
 >
 > ```ts
 > const builder = build<Profile>({ ... });
 > ```
 > ```ts
-> const builder: Builder<Profile, Profile, string>
+> const builder: Builder<Profile, Profile, string, never>
 > ```
 
 So, if you want to get type checking and use type-based code suggestions when filling out fields, while allowing the builder to infer types automatically, you can use the built-in `FieldsConfiguration` type:
@@ -884,7 +1078,7 @@ const builder = build({
 As a result, the builder retains all the type information and can validate the trait names passed to it, while you get all the TypeScript checks when filling out the fields.
 
 ```ts
-const builder: Builder<IProfileData, Profile, "younger" | "older">
+const builder: Builder<IProfileData, Profile, "younger" | "older", never>
 ```
 
 ```ts
@@ -894,6 +1088,52 @@ builder.one({
 
 // TS2322: Type "other" is not assignable to type
 // "younger" | "older" | ("younger" | "older")[] | undefined
+```
+
+Similarly, in the case of [using GeneratorFunction](#using-generatorfunction-to-create-fields):
+
+```ts
+import {build, withPrev, FieldsConfiguration} from 'mimicry-js';
+
+interface IProfileData {
+    id: number;
+    firstName: string;
+    lastName: string;
+    age?: number;
+}
+
+const builder = build({
+    fields: generate(function* (startId: number) {
+        while (true) {
+            const profile: FieldsConfiguration<IProfileData> = {
+                id: withPrev((previous) => (previous ? previous + 1 : startId)),
+                firstName: 'John',
+                lastName: 'Doe',
+                age: 30,
+            };
+
+            yield profile;
+        }
+    }),
+    postBuild: (generatedFields) => new Profile(generatedFields),
+    traits: {
+        younger: {
+            overrides: {
+                age: 18,
+            },
+        },
+        older: {
+            overrides: {
+                age: 50,
+            },
+        },
+    },
+});
+```
+As a result:
+
+```ts
+const builder: Builder<IProfileData, Profile, "younger" | "older", [startId: number]>
 ```
 
 ## License
