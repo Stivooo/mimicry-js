@@ -741,7 +741,7 @@ console.log(periods);
 > [!IMPORTANT]
 > You need to specify the type of the value received via `yield` manually.
 
-### Deep plain object merging in `overrides` and `traits`.
+### Deep plain object merging in `overrides` and `traits`
 
 Let's imagine that one of the object's fields is another object that also requires fake data. The builder supports using field generators in nested objects:
 
