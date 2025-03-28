@@ -118,6 +118,17 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string, I
         return field;
     };
 
+    const initFieldsGenerator = <MapperBuild = Fields>(
+        buildConfig?: BuildTimeConfig<Origin, Trait, MapperBuild, InitialParameters>,
+    ) => {
+        if (!fieldsConfiguration.originFieldsGenerator) {
+            return;
+        }
+
+        const initialParameters = extractInitialParameters(buildConfig?.initialParameters);
+        fieldsConfigurationGenerator = fieldsConfiguration.originFieldsGenerator(...initialParameters);
+    };
+
     const build = <MapperBuild = Fields>(
         buildConfig?: BuildTimeConfig<Origin, Trait, MapperBuild, InitialParameters>,
     ) => {
@@ -127,10 +138,10 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string, I
             const iterationFields = fieldsConfiguration.originFieldsFunction(previousBuildFields);
             fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
         } else if (fieldsConfiguration.originFieldsGenerator) {
-            if (fieldsConfigurationGenerator === null) {
-                const initialParameters = extractInitialParameters(buildConfig?.initialParameters);
-                fieldsConfigurationGenerator = fieldsConfiguration.originFieldsGenerator(...initialParameters);
+            if (!fieldsConfigurationGenerator) {
+                throw Error("The fields GeneratorFunction isn't initialized!");
             }
+
             const iterationFields = fieldsConfigurationGenerator.next(previousBuildFields).value;
             fieldsForProcessing = deepMerge(iterationFields, extractIterators(iterationFields));
         } else {
@@ -146,15 +157,19 @@ function createBuilder<Origin, Fields = Origin, Trait extends string = string, I
     };
 
     return {
-        one: <Result = Fields>(buildConfig?: BuildTimeConfig<Origin, Trait, Result, InitialParameters>) =>
-            build(buildConfig),
+        one: <Result = Fields>(buildConfig?: BuildTimeConfig<Origin, Trait, Result, InitialParameters>) => {
+            initFieldsGenerator(buildConfig);
+            return build(buildConfig);
+        },
         many: <Result = Fields>(
             count: number,
             buildConfig?: BuildTimeConfig<Origin, Trait, Result, InitialParameters>,
-        ) =>
-            Array(count)
+        ) => {
+            initFieldsGenerator(buildConfig);
+            return Array(count)
                 .fill(0)
-                .map(() => build(buildConfig)),
+                .map(() => build(buildConfig));
+        },
     };
 }
 

@@ -815,6 +815,59 @@ describe('builder checks:', () => {
             expect(result).toEqual([{result: 'result 2 true'}, {result: 'result 3 true'}, {result: 'result 4 true'}]);
         });
 
+        it('should init new fields iterator for each `many` or `one` invoke', () => {
+            const builder = build({
+                fields: generate(function* (a: number, b: string, c: boolean = true) {
+                    let prev = a;
+
+                    while (true) {
+                        yield {
+                            result: `${b} ${prev} ${c}`,
+                        };
+                        prev = prev + a;
+                    }
+                }),
+            });
+
+            const firstSet = builder.many(3, {
+                initialParameters: [1, 'first'],
+            });
+            const secondSet = builder.many(3, {
+                initialParameters: [1, 'second', false],
+            });
+
+            expect(firstSet).toEqual([{result: 'first 1 true'}, {result: 'first 2 true'}, {result: 'first 3 true'}]);
+            expect(secondSet).toEqual([
+                {result: 'second 1 false'},
+                {result: 'second 2 false'},
+                {result: 'second 3 false'},
+            ]);
+
+            const thirdResult = builder.one({
+                initialParameters: [1, 'second'],
+            });
+
+            expect(thirdResult).toEqual({result: 'second 1 true'});
+        });
+
+        it('should preserve nested iterators between each invoke', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    while (true) {
+                        yield {
+                            result: sequence(),
+                        };
+                    }
+                }),
+            });
+
+            const firstSet = builder.many(3);
+            const secondSet = builder.many(3);
+
+            expect(firstSet).toEqual([{result: 0}, {result: 1}, {result: 2}]);
+            expect(secondSet).toEqual([{result: 3}, {result: 4}, {result: 5}]);
+        });
+
         it('should build by fields configuration Generator with initial object', () => {
             const builder = build({
                 fields: generate(function* (initialValues: {a: number; b: string}) {

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-03-28
+### Fixed
+- Fix the behavior of builders using [generator functions](https://github.com/Stivooo/mimicry-js/tree/main?tab=readme-ov-file#using-generatorfunction-to-create-fields): the generator should be initialized on each call of the `one` and `many` methods.
+
 ## [1.1.0] - 2025-03-26
 ### Fixed
 - Add default type value for TraitName in `TraitsConfiguration`
