@@ -38,7 +38,7 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
     - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
     - [Nested arrays](#nested-arrays-of-configurations-with-field-generators)
     - [Custom iterators](#custom-iterators)
-- [About TypeScript types](#about-typescript-types)
+- [Best practices for using TypeScript types](#best-practices-for-using-typescript-types)
 
 </details>
 
@@ -467,6 +467,9 @@ So now building a support user is easy:
 const support = userBuilder.one({traits: 'support'});
 ```
 
+> [!IMPORTANT]
+> In the example above, a _generic type_ is used to specify the `User` type for simplicity. However, it is highly recommended to explore better alternatives for type specification in the [Best Practices for Using TypeScript Types](#best-practices-for-using-typescript-types) section.
+
 ### Multiple traits
 
 You can define and use multiple traits when building an object. Be aware that if two traits override the same value, the one passed in last wins:
@@ -564,8 +567,8 @@ For this, Mimicry-js provides the `generate` decorator, which expects a generato
 import {build, generate} from 'mimicry-js';
 
 function* timePeriodsGenerator() {
-  let currentStart = new Date().getTime();
-  const periodDurationHs = 6;
+  let currentStart = new Date('2025-01-01').getTime();
+  const periodDurationHs = 24;
   const periodDurationMs = periodDurationHs * 60 * 60 * 1000; // Hours value in milliseconds
 
   while (true) {
@@ -583,14 +586,44 @@ const periods = builder.many(3);
 
 console.log(periods);
 // [
-//     { start: 2025-03-26T11:39:08.147Z, end: 2025-03-26T17:39:08.147Z },
-//     { start: 2025-03-26T17:39:08.147Z, end: 2025-03-26T23:39:08.147Z },
-//     { start: 2025-03-26T23:39:08.147Z, end: 2025-03-27T05:39:08.147Z }
+//     { start: 2025-01-01T00:00:00.000Z, end: 2025-01-02T00:00:00.000Z },
+//     { start: 2025-01-02T00:00:00.000Z, end: 2025-01-03T00:00:00.000Z },
+//     { start: 2025-01-03T00:00:00.000Z, end: 2025-01-04T00:00:00.000Z }
 // ]
 ```
 
 > [!TIP]
 > In this case, you can also use [overrides](#overrides-per-build) and [traits](#traits).
+
+> [!IMPORTANT]
+> Keep that the provided generator function is reinitialized each time the `many` or `one` methods are called.
+
+This means that each build will be independent of the others. This is necessary to prevent unrelated tests from affecting each other:
+
+```ts
+const builder = build({
+  fields: generate(timePeriodsGenerator),
+});
+
+const firstPeriodsSet = builder.many(3);
+const secondPeriodsSet = builder.many(3);
+
+console.log(firstPeriodsSet);
+// [
+//     { start: 2025-01-01T00:00:00.000Z, end: 2025-01-02T00:00:00.000Z },
+//     { start: 2025-01-02T00:00:00.000Z, end: 2025-01-03T00:00:00.000Z },
+//     { start: 2025-01-03T00:00:00.000Z, end: 2025-01-04T00:00:00.000Z }
+// ]
+
+console.log(secondPeriodsSet);
+// [
+//     { start: 2025-01-01T00:00:00.000Z, end: 2025-01-02T00:00:00.000Z },
+//     { start: 2025-01-02T00:00:00.000Z, end: 2025-01-03T00:00:00.000Z },
+//     { start: 2025-01-03T00:00:00.000Z, end: 2025-01-04T00:00:00.000Z }
+// ]
+```
+> [!NOTE]
+> This does not apply to [nested field generators](#using-fields-generators),  which are preserved after the first generation.
 
 #### Passing `initialParameters` to the generator function
 
@@ -653,6 +686,7 @@ function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: numbe
   while (true) {
     const currentEnd = currentStart + periodDurationInMs;
     yield {
+      id: sequence(),
       start: new Date(currentStart),
       end: new Date(currentEnd),
       type: oneOf('open', 'closed')
@@ -675,16 +709,19 @@ const periods = builder.many(3, {
 console.log(periods);
 // [
 //     {
+//         id: 0,
 //         start: 2025-01-01T00:00:00.000Z,
 //         end: 2025-01-02T00:00:00.000Z,
 //         type: 'open'
 //     },
 //     {
+//         id: 1,
 //         start: 2025-01-02T00:00:00.000Z,
 //         end: 2025-01-03T00:00:00.000Z,
 //         type: 'closed'
 //     },
 //     {
+//         id: 2,
 //         start: 2025-01-03T00:00:00.000Z,
 //         end: 2025-01-04T00:00:00.000Z,
 //         type: 'open'
@@ -791,7 +828,7 @@ console.log(account);
 > You can just as easily create a separate builder for the `address` object and use it, but in this case, the data will be static.
 
 > [!WARNING]
-> Note that in this case, you must specify the type to ensure the builder correctly infers types.
+> Note that in this case, you must specify the type to ensure the builder correctly infers types. However, it is highly recommended to explore better alternatives for type specification in the [Best Practices for Using TypeScript Types](#best-practices-for-using-typescript-types) section.
 
 When using this builder, we may need to override certain fields, such as `city` and `street` of the address.
 So, we can do that:
@@ -941,7 +978,7 @@ console.log(account);
 > However, the builder does not perform deep merging of arrays in `traits` and `overrides`.
 
 > [!WARNING]
-> Note that in this case, you must specify the type to ensure the builder correctly infers types.
+> Note that in this case, you must specify the type to ensure the builder correctly infers types. However, it is highly recommended to explore better alternatives for type specification in the [Best Practices for Using TypeScript Types](#best-practices-for-using-typescript-types) section.
 
 ### Custom iterators
 
@@ -972,7 +1009,7 @@ const [first, second, third] = builder.many(3);
 // third.exponent === 8
 ```
 
-## About TypeScript types
+## Best practices for using TypeScript types
 
 Mimicry-js is written in TypeScript and ships with the types generated so if you're using TypeScript you will get type support out the box. \
 The builder below, in addition to the object with fields, has a set of traits and a postBuild transformer.

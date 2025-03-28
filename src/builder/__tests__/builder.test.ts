@@ -815,6 +815,59 @@ describe('builder checks:', () => {
             expect(result).toEqual([{result: 'result 2 true'}, {result: 'result 3 true'}, {result: 'result 4 true'}]);
         });
 
+        it('should init new iterator for each many invoke', () => {
+            const builder = build({
+                fields: generate(function* (a: number, b: string, c: boolean = true) {
+                    let prev = a;
+
+                    while (true) {
+                        yield {
+                            result: `${b} ${prev} ${c}`,
+                        };
+                        prev = prev + a;
+                    }
+                }),
+            });
+
+            const firstSet = builder.many(3, {
+                initialParameters: [1, 'first'],
+            });
+            const secondSet = builder.many(3, {
+                initialParameters: [1, 'second', false],
+            });
+
+            expect(firstSet).toEqual([{result: 'first 1 true'}, {result: 'first 2 true'}, {result: 'first 3 true'}]);
+            expect(secondSet).toEqual([
+                {result: 'second 1 false'},
+                {result: 'second 2 false'},
+                {result: 'second 3 false'},
+            ]);
+
+            const thirdResult = builder.one({
+                initialParameters: [1, 'second'],
+            });
+
+            expect(thirdResult).toEqual({result: 'second 1 true'});
+        });
+
+        it('should preserve nested iterators between each invoke', () => {
+            const builder = build({
+                fields: generate(function* () {
+                    while (true) {
+                        yield {
+                            result: sequence(),
+                        };
+                    }
+                }),
+            });
+
+            const firstSet = builder.many(3);
+            const secondSet = builder.many(3);
+
+            expect(firstSet).toEqual([{result: 0}, {result: 1}, {result: 2}]);
+            expect(secondSet).toEqual([{result: 3}, {result: 4}, {result: 5}]);
+        });
+
         it('should build by fields configuration Generator with initial object', () => {
             const builder = build({
                 fields: generate(function* (initialValues: {a: number; b: string}) {
@@ -1051,5 +1104,55 @@ describe('builder checks:', () => {
 
             expect(() => builder.one()).toThrow('No unique options left!');
         });
+    });
+
+    it('should ', () => {
+        function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
+            let currentStart = currentStartDate.getTime();
+
+            while (true) {
+                const currentEnd = currentStart + periodDurationInMs;
+                yield {
+                    id: sequence(),
+                    start: new Date(currentStart),
+                    end: new Date(currentEnd),
+                    type: oneOf('open', 'closed'),
+                };
+                currentStart = currentEnd;
+            }
+        }
+
+        const builder = build({
+            fields: generate(timePeriodsGenerator),
+        });
+
+        const start = new Date('2025-01-01');
+        const duration = 24 * 60 * 60 * 1000;
+
+        const periods = builder.many(3, {
+            initialParameters: [start, duration],
+        });
+
+        console.log(periods);
+        // [
+        //     {
+        //         id: 0,
+        //         start: 2025-01-01T00:00:00.000Z,
+        //         end: 2025-01-02T00:00:00.000Z,
+        //         type: 'open'
+        //     },
+        //     {
+        //         id: 1,
+        //         tart: 2025-01-02T00:00:00.000Z,
+        //         end: 2025-01-03T00:00:00.000Z,
+        //         type: 'closed'
+        //     },
+        //     {
+        //         id: 2,
+        //         start: 2025-01-03T00:00:00.000Z,
+        //         end: 2025-01-04T00:00:00.000Z,
+        //         type: 'closed'
+        //     }
+        // ]
     });
 });
