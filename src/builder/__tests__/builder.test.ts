@@ -815,7 +815,7 @@ describe('builder checks:', () => {
             expect(result).toEqual([{result: 'result 2 true'}, {result: 'result 3 true'}, {result: 'result 4 true'}]);
         });
 
-        it('should init new iterator for each many invoke', () => {
+        it('should init new fields iterator for each `many` or `one` invoke', () => {
             const builder = build({
                 fields: generate(function* (a: number, b: string, c: boolean = true) {
                     let prev = a;
