@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.1] - 2025-03-31
+### Fixed
+- Fix exports of `resetable` and `ResetSignal`.
+
 ## [1.2.0] - 2025-03-31
 ### Fixed
 - Fix the typing of `postBuild` in `BuildTimeConfig` when `postBuild` is present in the `BuilderConfiguration`.
