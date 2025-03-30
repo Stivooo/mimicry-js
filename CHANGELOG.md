@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [1.2.0] - 2025-03-30
+## [1.2.0] - 2025-03-31
 ### Fixed
 - Fix the typing of `postBuild` in `BuildTimeConfig` when `postBuild` is present in the `BuilderConfiguration`.
 

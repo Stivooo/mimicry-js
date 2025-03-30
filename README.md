@@ -1094,7 +1094,7 @@ If you take a closer look at the `exponentiation` type inferred by TypeScript in
 ```ts
 function exponentiation(initialValue: number): Generator<number, void, ResetSignal>
 ```
-> [!NOTE]
+> [!TIP]
 > When the builder calls the `next()` method on your iterator, it passes an instance of `ResetSignal` as an argument, which is then returned by the `yield` operator inside the generator function.
 
 This example could be rewritten in a more explicit form, but in that case, you would need to define `ResetSignal` type definition yourself.
