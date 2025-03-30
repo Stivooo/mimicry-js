@@ -596,8 +596,9 @@ console.log(periods);
 > In this case, you can also use [overrides](#overrides-per-build) and [traits](#traits).
 
 > [!IMPORTANT]
-> Keep that the provided generator function is reinitialized each time the `many` or `one` methods are called.
+> It is important to note that only infinite generators are supported.
 
+The provided generator function is called each time the `many` or `one` methods are called.
 This means that each build will be independent of the others. This is necessary to prevent unrelated tests from affecting each other:
 
 ```ts
@@ -628,7 +629,7 @@ console.log(secondPeriodsSet);
 #### Passing `initialParameters` to the generator function
 
 It can be very useful to pass some initial values to the generator function at the moment of object generation. \
-So, `buildTimeConfig` has an optional `initialParameters` field, which accepts a tuple of arguments taken by the generator function:
+So, `BuildTimeConfig` has an optional `initialParameters` field, which accepts a tuple of arguments taken by the generator function:
 
 ```ts
 import {build, generate} from 'mimicry-js';
@@ -1008,6 +1009,9 @@ const [first, second, third] = builder.many(3);
 // second.exponent === 4
 // third.exponent === 8
 ```
+
+> [!IMPORTANT]
+> Keep in mind that only infinite generators are supported.
 
 ## Best practices for using TypeScript types
 

@@ -406,7 +406,7 @@ describe('builder checks:', () => {
             expect(book.tags[1]).toBeInstanceOf(Tag);
         });
 
-        it('should rebuild result by build time postBuild', () => {
+        it('should modify result by using time postBuild', () => {
             class Tag {
                 constructor(
                     public id: number,
@@ -430,6 +430,24 @@ describe('builder checks:', () => {
             expect(double).toBeInstanceOf(Tag);
             expect(double.name).toBe('Double');
             expect(double.id).toBe(0);
+        });
+
+        it('should use both postBuild in build and one', () => {
+            const builder = build({
+                fields: {
+                    name: oneOf('Some', 'Another'),
+                },
+                postBuild: (data) => ({title: data.name}),
+            });
+
+            const result = builder.one({
+                overrides: {
+                    name: 'Double',
+                },
+                postBuild: (data) => data.title.toLowerCase(),
+            });
+
+            expect(result).toBe('double');
         });
 
         it('should build with nested overrides and functional field generator', () => {
@@ -795,17 +813,19 @@ describe('builder checks:', () => {
         });
 
         it('should build by fields configuration Generator with few initial parameters', () => {
-            const builder = build({
-                fields: generate(function* (a: number, b: string, c: boolean = true) {
-                    let prev = a;
+            const generator = function* (a: number, b: string, c: boolean = true) {
+                let prev = a;
 
-                    while (true) {
-                        prev = prev + a;
-                        yield {
-                            result: `${b} ${prev} ${c}`,
-                        };
-                    }
-                }),
+                while (true) {
+                    prev = prev + a;
+                    yield {
+                        result: `${b} ${prev} ${c}`,
+                    };
+                }
+            };
+
+            const builder = build({
+                fields: generate(generator),
             });
 
             const result = builder.many(3, {
@@ -1053,6 +1073,37 @@ describe('builder checks:', () => {
             expect(second.exponent).toBe(4);
             expect(third.exponent).toBe(8);
         });
+
+        // todo uncomment
+        // it('should reset custom generator', () => {
+        //     function* exponentiation(initialValue = 0) {
+        //         let exponent = 1;
+        //
+        //         while (true) {
+        //             const abortSignal: AbortSignal = yield initialValue ** exponent;
+        //
+        //             if (abortSignal?.aborted) {
+        //                 exponent = 1;
+        //             }
+        //
+        //             exponent++;
+        //         }
+        //     }
+        //
+        //     const builder = build({
+        //         fields: {
+        //             exponent: exponentiation(2),
+        //         },
+        //     });
+        //
+        //     const firstSet = builder.many(3);
+        //
+        //     expect(firstSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
+        //     builder.reset();
+        //
+        //     const secondSet = builder.many(3);
+        //     expect(secondSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
+        // });
     });
 
     describe('withPrev generator checks', () => {
@@ -1105,4 +1156,45 @@ describe('builder checks:', () => {
             expect(() => builder.one()).toThrow('No unique options left!');
         });
     });
+
+    // todo uncomment
+    // describe('reset checks', () => {
+    //     it('should reset sequence', () => {
+    //         const builder = build({
+    //             fields: {
+    //                 value: sequence(),
+    //             },
+    //         });
+    //
+    //         const firstSet = builder.many(3);
+    //         expect(firstSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+    //         builder.reset();
+    //
+    //         const secondSet = builder.many(3);
+    //         expect(secondSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+    //         builder.reset();
+    //
+    //         const thirdSet = builder.many(3);
+    //         expect(thirdSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+    //     });
+    //
+    //     it('should reset unique', () => {
+    //         const builder = build({
+    //             fields: {
+    //                 value: unique('A', 'B', 'C'),
+    //             },
+    //         });
+    //
+    //         const firstSet = builder.many(3);
+    //         expect(firstSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+    //         builder.reset();
+    //
+    //         const secondSet = builder.many(3);
+    //         expect(secondSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+    //         builder.reset();
+    //
+    //         const thirdSet = builder.many(3);
+    //         expect(thirdSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+    //     });
+    // });
 });
