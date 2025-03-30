@@ -20,5 +20,5 @@ export type {
     FieldType,
 } from './builder/types';
 
-export {resetable} from 'reset/resetable';
-export type {ResetSignal} from 'reset/ResetSignal';
+export {resetable} from './reset/resetable';
+export type {ResetSignal} from './reset/ResetSignal';
