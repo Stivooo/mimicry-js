@@ -20,6 +20,7 @@ import {extractTraits} from './utils/extractTraits';
 import {extractOverrides} from './__tests__/extractOverrides';
 import {extractFieldsConfiguration} from './utils/extractFieldsConfiguration';
 import {extractInitialParameters} from './utils/extractInitialParameters';
+import {ResetableSignal} from '../reset/ResetableSignal';
 
 function createBuilder<Origin, Result = Origin, Trait extends string = string, InitialParameters extends any[] = never>(
     config: BuilderConfiguration<Origin, Result, Trait, InitialParameters>,
@@ -32,6 +33,8 @@ function createBuilder<Origin, Result = Origin, Trait extends string = string, I
     let definedIterators: IteratorsConfiguration<Origin> | null = null;
     let previousBuildFields: Origin | undefined;
     let fieldsConfigurationGenerator: FieldsConfigurationGenerator<Origin> | null = null;
+
+    const resetSignal = new ResetableSignal();
 
     const mapFieldsWithOverrides = <Fields = Origin, PostBuildResult = Result>(
         fields: FieldsConfiguration<Fields>,
@@ -104,7 +107,7 @@ function createBuilder<Origin, Result = Origin, Trait extends string = string, I
         }
 
         if (isIterator(field)) {
-            return field.next().value as Value;
+            return field.next(resetSignal).value as Value;
         }
 
         if (isClassInstance<Value>(field)) {
@@ -173,7 +176,9 @@ function createBuilder<Origin, Result = Origin, Trait extends string = string, I
                 .fill(0)
                 .map(() => build(buildConfig));
         },
-        reset: () => {},
+        reset: () => {
+            resetSignal.reset();
+        },
     };
 }
 

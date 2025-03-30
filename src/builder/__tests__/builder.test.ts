@@ -7,6 +7,7 @@ import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
 import {generate} from '../../generators/generate';
 import {FieldsConfiguration} from '../types';
+import {resetable} from '../../reset/resetable';
 
 interface IProfileData {
     firstName: string;
@@ -1052,12 +1053,11 @@ describe('builder checks:', () => {
 
     describe('custom generator checks', () => {
         it('should build by custom generator', () => {
-            function* exponentiation(initialValue = 0) {
-                let exponent = 1;
+            function* exponentiation(initialValue: number) {
+                let exponent = 0;
 
                 while (true) {
-                    yield initialValue ** exponent;
-                    exponent++;
+                    yield initialValue ** ++exponent;
                 }
             }
 
@@ -1074,36 +1074,29 @@ describe('builder checks:', () => {
             expect(third.exponent).toBe(8);
         });
 
-        // todo uncomment
-        // it('should reset custom generator', () => {
-        //     function* exponentiation(initialValue = 0) {
-        //         let exponent = 1;
-        //
-        //         while (true) {
-        //             const abortSignal: AbortSignal = yield initialValue ** exponent;
-        //
-        //             if (abortSignal?.aborted) {
-        //                 exponent = 1;
-        //             }
-        //
-        //             exponent++;
-        //         }
-        //     }
-        //
-        //     const builder = build({
-        //         fields: {
-        //             exponent: exponentiation(2),
-        //         },
-        //     });
-        //
-        //     const firstSet = builder.many(3);
-        //
-        //     expect(firstSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
-        //     builder.reset();
-        //
-        //     const secondSet = builder.many(3);
-        //     expect(secondSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
-        // });
+        it('should reset custom generator', () => {
+            function* exponentiation(initialValue: number) {
+                const {val, set, use} = resetable(0);
+
+                while (true) {
+                    use(yield initialValue ** set(val() + 1));
+                }
+            }
+
+            const builder = build({
+                fields: {
+                    exponent: exponentiation(2),
+                },
+            });
+
+            const firstSet = builder.many(3);
+
+            expect(firstSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
+        });
     });
 
     describe('withPrev generator checks', () => {
@@ -1157,44 +1150,66 @@ describe('builder checks:', () => {
         });
     });
 
-    // todo uncomment
-    // describe('reset checks', () => {
-    //     it('should reset sequence', () => {
-    //         const builder = build({
-    //             fields: {
-    //                 value: sequence(),
-    //             },
-    //         });
-    //
-    //         const firstSet = builder.many(3);
-    //         expect(firstSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
-    //         builder.reset();
-    //
-    //         const secondSet = builder.many(3);
-    //         expect(secondSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
-    //         builder.reset();
-    //
-    //         const thirdSet = builder.many(3);
-    //         expect(thirdSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
-    //     });
-    //
-    //     it('should reset unique', () => {
-    //         const builder = build({
-    //             fields: {
-    //                 value: unique('A', 'B', 'C'),
-    //             },
-    //         });
-    //
-    //         const firstSet = builder.many(3);
-    //         expect(firstSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
-    //         builder.reset();
-    //
-    //         const secondSet = builder.many(3);
-    //         expect(secondSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
-    //         builder.reset();
-    //
-    //         const thirdSet = builder.many(3);
-    //         expect(thirdSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
-    //     });
-    // });
+    describe('reset checks', () => {
+        it('should reset sequence', () => {
+            const builder = build({
+                fields: {
+                    value: sequence(),
+                },
+            });
+
+            const firstSet = builder.many(3);
+            expect(firstSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            builder.reset();
+
+            const thirdSet = builder.many(3);
+            expect(thirdSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+        });
+
+        it('should reset unique', () => {
+            const builder = build({
+                fields: {
+                    value: unique('A', 'B', 'C'),
+                },
+            });
+
+            const firstSet = builder.many(3);
+            expect(firstSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            builder.reset();
+
+            const thirdSet = builder.many(3);
+            expect(thirdSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+        });
+
+        it('should reset multiple iterators', () => {
+            const builder = build({
+                fields: {
+                    id: sequence(),
+                    value: unique('Sam', 'John'),
+                },
+            });
+
+            const firstSet = builder.many(2);
+            expect(firstSet).toEqual([
+                {id: 0, value: 'Sam'},
+                {id: 1, value: 'John'},
+            ]);
+
+            builder.reset();
+
+            const secondSet = builder.many(2);
+            expect(secondSet).toEqual([
+                {id: 0, value: 'Sam'},
+                {id: 1, value: 'John'},
+            ]);
+        });
+    });
 });

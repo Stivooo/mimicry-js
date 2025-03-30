@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix the typing of `postBuild` in `BuildTimeConfig` when `postBuild` is present in the `BuilderConfiguration`.
 
 ### Added
-- Add the `builder.reset()` method to reset the state of `sequence`, `unique`, and custom generators using `AbortSignal`;
+- Add the [`builder.reset()` method](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#resetting-the-state-of-sequence-and-unique) to reset the state of `sequence`, `unique`, and custom generators [using `resetable`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#implementation-of-state-reset);
 - Add `FieldType` export.
 
 

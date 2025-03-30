@@ -1,9 +1,10 @@
 import type {FixedValue} from '../generators/fixed';
 import type {FieldsGenerator} from '../generators/generate';
+import {ResetSignal} from '../reset/ResetSignal';
 
 export type FunctionalGenerator<T> = () => T;
 
-export type FieldGenerator<T> = FunctionalGenerator<T> | Iterator<T, never | void>;
+export type FieldGenerator<T> = FunctionalGenerator<T> | Iterator<T, never | void, ResetSignal>;
 
 export type FieldType<T> = T | FixedValue<T> | FieldGenerator<T> | FieldsConfiguration<T>;
 
