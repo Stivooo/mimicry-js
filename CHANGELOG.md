@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-03-31
+### Fixed
+- Fix the typing of `postBuild` in `BuildTimeConfig` when `postBuild` is present in the `BuilderConfiguration`.
+
+### Added
+- Add the [`builder.reset()` method](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#resetting-the-state-of-sequence-and-unique) to reset the state of `sequence`, `unique`, and custom generators [using `resetable`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#implementation-of-state-reset);
+- Add `FieldType` export.
+
+
 ## [1.1.1] - 2025-03-28
 ### Fixed
 - Fix the behavior of builders using [generator functions](https://github.com/Stivooo/mimicry-js/tree/main?tab=readme-ov-file#using-generatorfunction-to-create-fields): the generator should be initialized on each call of the `one` and `many` methods.

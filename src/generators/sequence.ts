@@ -1,10 +1,12 @@
-export function sequence(): Generator<number, never, never>;
-export function sequence<T>(providedFunction: (counter: number) => T): Generator<T, never, never>;
-export function* sequence<T>(providedFunction?: (counter: number) => T): Generator<T, never, never> {
-    let counter = 0;
+import {ResetSignal} from '../reset/ResetSignal';
+import {resetable} from '../reset/resetable';
+
+export function sequence(): Generator<number, never, ResetSignal>;
+export function sequence<T>(providedFunction: (counter: number) => T): Generator<T, never, ResetSignal>;
+export function* sequence<T>(providedFunction?: (counter: number) => T): Generator<T, never, ResetSignal> {
+    const {val, set, use} = resetable(-1);
 
     while (true) {
-        yield providedFunction ? providedFunction(counter) : (counter as T);
-        counter++;
+        use(yield providedFunction ? providedFunction(set(val() + 1)) : (set(val() + 1) as T));
     }
 }

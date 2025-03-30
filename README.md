@@ -26,6 +26,7 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
     - [`bool`](#bool)
     - [`unique`](#unique)
     - [`withPrev`](#withprev)
+    - [Resetting the state of `sequence` and `unique`](#resetting-the-state-of-sequence-and-unique)
 - [`postBuild` modifications and classes](#postbuild-modifications-and-classes)
 - [Overrides per-build](#overrides-per-build)
 - [Traits](#traits)
@@ -38,6 +39,7 @@ It makes no assumptions about frameworks or libraries, and can be used with any 
     - [Plain object merging](#deep-plain-object-merging-in-overrides-and-traits)
     - [Nested arrays](#nested-arrays-of-configurations-with-field-generators)
     - [Custom iterators](#custom-iterators)
+      - [Implementation of state reset](#implementation-of-state-reset)
 - [Best practices for using TypeScript types](#best-practices-for-using-typescript-types)
 
 </details>
@@ -128,9 +130,9 @@ The builder calls the specified function for the field when creating each instan
 > In this case, the builder correctly infers the type for the field.
 
 ```ts
-const profiles: {    
-    firstName: string  
-    lastName: string 
+const profiles: {
+    firstName: string
+    lastName: string
 }[]
 ```
 
@@ -242,9 +244,9 @@ If you need something to be either `true` or `false`, you can use `bool`:
 import {build, bool} from 'mimicry-js';
 
 const userBuilder = build({
-  fields: {
-    isActive: bool(),
-  },
+    fields: {
+        isActive: bool(),
+    },
 });
 
 const user = userBuilder.one();
@@ -316,6 +318,40 @@ ___
 > [!NOTE]
 > The builder also supports passing [nested plain objects](#deep-plain-object-merging-in-overrides-and-traits) with generators in fields.
 
+### Resetting the state of `sequence` and `unique`
+
+In some cases, you may need to reset the state of the `sequence` and `unique` generators. To do this, you can call the `builder.reset()` method:
+
+```ts
+import {build, sequence, unique} from 'mimicry-js';
+
+const builder = build({
+    fields: {
+        id: sequence(),
+        name: unique('Sam', 'John', 'Mike'),
+    },
+});
+
+const firstSet = builder.many(3);
+console.log(firstSet);
+// [
+//     { id: 0, name: 'Sam' },
+//     { id: 1, name: 'John' },
+//     { id: 2, name: 'Mike' }
+// ]
+
+builder.reset();
+
+const secondSet = builder.many(3);
+console.log(secondSet);
+// [
+//     { id: 0, name: 'Sam' },
+//     { id: 1, name: 'John' },
+//     { id: 2, name: 'Mike' }
+// ]
+```
+> [!NOTE]
+> Additionally, you can implement state resetting in [custom iterators](#implementation-of-state-reset).
 
 ## `postBuild` modifications and classes.
 
@@ -567,19 +603,19 @@ For this, Mimicry-js provides the `generate` decorator, which expects a generato
 import {build, generate} from 'mimicry-js';
 
 function* timePeriodsGenerator() {
-  let currentStart = new Date('2025-01-01').getTime();
-  const periodDurationHs = 24;
-  const periodDurationMs = periodDurationHs * 60 * 60 * 1000; // Hours value in milliseconds
+    let currentStart = new Date('2025-01-01').getTime();
+    const periodDurationHs = 24;
+    const periodDurationMs = periodDurationHs * 60 * 60 * 1000; // Hours value in milliseconds
 
-  while (true) {
-    const currentEnd = currentStart + periodDurationMs;
-    yield {start: new Date(currentStart), end: new Date(currentEnd)};
-    currentStart = currentEnd;
-  }
+    while (true) {
+        const currentEnd = currentStart + periodDurationMs;
+        yield {start: new Date(currentStart), end: new Date(currentEnd)};
+        currentStart = currentEnd;
+    }
 }
 
 const builder = build({
-  fields: generate(timePeriodsGenerator),
+    fields: generate(timePeriodsGenerator),
 });
 
 const periods = builder.many(3);
@@ -596,13 +632,14 @@ console.log(periods);
 > In this case, you can also use [overrides](#overrides-per-build) and [traits](#traits).
 
 > [!IMPORTANT]
-> Keep that the provided generator function is reinitialized each time the `many` or `one` methods are called.
+> It is important to note that only infinite generators are supported.
 
+The provided generator function is called each time the `many` or `one` methods are called.
 This means that each build will be independent of the others. This is necessary to prevent unrelated tests from affecting each other:
 
 ```ts
 const builder = build({
-  fields: generate(timePeriodsGenerator),
+    fields: generate(timePeriodsGenerator),
 });
 
 const firstPeriodsSet = builder.many(3);
@@ -628,30 +665,30 @@ console.log(secondPeriodsSet);
 #### Passing `initialParameters` to the generator function
 
 It can be very useful to pass some initial values to the generator function at the moment of object generation. \
-So, `buildTimeConfig` has an optional `initialParameters` field, which accepts a tuple of arguments taken by the generator function:
+So, `BuildTimeConfig` has an optional `initialParameters` field, which accepts a tuple of arguments taken by the generator function:
 
 ```ts
 import {build, generate} from 'mimicry-js';
 
 function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
-  let currentStart = currentStartDate.getTime();
+    let currentStart = currentStartDate.getTime();
 
-  while (true) {
-    const currentEnd = currentStart + periodDurationInMs;
-    yield {start: new Date(currentStart), end: new Date(currentEnd)};
-    currentStart = currentEnd;
-  }
+    while (true) {
+        const currentEnd = currentStart + periodDurationInMs;
+        yield {start: new Date(currentStart), end: new Date(currentEnd)};
+        currentStart = currentEnd;
+    }
 }
 
 const builder = build({
-  fields: generate(timePeriodsGenerator),
+    fields: generate(timePeriodsGenerator),
 });
 
 const start = new Date('2025-01-01');
 const duration = 24 * 60 * 60 * 1000;
 
 const periods = builder.many(3, {
-  initialParameters: [start, duration],
+    initialParameters: [start, duration],
 });
 
 console.log(periods);
@@ -681,29 +718,29 @@ You can still use [generators](#built-in-value-generators) and [functions](#uniq
 import {build, generate, oneOf} from 'mimicry-js';
 
 function* timePeriodsGenerator(currentStartDate: Date, periodDurationInMs: number) {
-  let currentStart = currentStartDate.getTime();
+    let currentStart = currentStartDate.getTime();
 
-  while (true) {
-    const currentEnd = currentStart + periodDurationInMs;
-    yield {
-      id: sequence(),
-      start: new Date(currentStart),
-      end: new Date(currentEnd),
-      type: oneOf('open', 'closed')
-    };
-    currentStart = currentEnd;
-  }
+    while (true) {
+        const currentEnd = currentStart + periodDurationInMs;
+        yield {
+            id: sequence(),
+            start: new Date(currentStart),
+            end: new Date(currentEnd),
+            type: oneOf('open', 'closed')
+        };
+        currentStart = currentEnd;
+    }
 }
 
 const builder = build({
-  fields: generate(timePeriodsGenerator),
+    fields: generate(timePeriodsGenerator),
 });
 
 const start = new Date('2025-01-01');
 const duration = 24 * 60 * 60 * 1000;
 
 const periods = builder.many(3, {
-  initialParameters: [start, duration],
+    initialParameters: [start, duration],
 });
 
 console.log(periods);
@@ -987,12 +1024,11 @@ You can also use custom [iterators](https://developer.mozilla.org/en-US/docs/Web
 ```ts
 import {build} from 'mimicry-js';
 
-function* exponentiation(initialValue = 0) {
-    let exponent = 1;
+function* exponentiation(initialValue: number) {
+    let exponent = 0;
 
     while (true) {
-        yield initialValue ** exponent;
-        exponent++;
+        yield initialValue ** ++exponent;
     }
 }
 
@@ -1008,6 +1044,126 @@ const [first, second, third] = builder.many(3);
 // second.exponent === 4
 // third.exponent === 8
 ```
+
+> [!IMPORTANT]
+> Keep in mind that only infinite generators are supported.
+
+#### Implementation of state reset
+
+The builder can [reset the state of `sequence` and `unique`](#resetting-the-state-of-sequence-and-unique) by calling the `builder.reset()` method. You can track this method call to reset values in your custom generator function.
+
+To facilitate this, Mimicry-js provides the `resetable` utility, which allows managing state within a generator.
+It takes an initial value and returns a `Resetable` instance with three methods: `val`, `set`, and `use`.
+
+- `val` provides access to the current state.
+- `set` allows updating the state;  it takes a new value and returns the updated one.
+- `use` subscribes a specific `Resetable` instance to `ResetSignal`.
+
+In the example below, when `builder.reset()` is called, the `val` state resets to its initial value, which in this case is _zero_:
+
+```ts
+import {build, resetable} from 'mimicry-js';
+
+function* exponentiation(initialValue: number) {
+    const {val, set, use} = resetable(0);
+
+    while (true) {
+        use(yield initialValue ** set(val() + 1));
+    }
+}
+
+const builder = build({
+    fields: {
+        exponent: exponentiation(2),
+    },
+});
+
+const firstSet = builder.many(3);
+console.log(firstSet); // [ { exponent: 2 }, { exponent: 4 }, { exponent: 8 } ]
+
+builder.reset();
+
+const secondSet = builder.many(3);
+console.log(secondSet); //  [ { exponent: 2 }, { exponent: 4 }, { exponent: 8 } ]
+```
+
+This example may seem somewhat complex to understand. However, there is no "magic" happening here.
+
+If you take a closer look at the `exponentiation` type inferred by TypeScript in the example above, you'll see that the `Generator` accepts `ResetSignal` as the `TNext` generic type.
+
+```ts
+function exponentiation(initialValue: number): Generator<number, void, ResetSignal>
+```
+> [!TIP]
+> When the builder calls the `next()` method on your iterator, it passes an instance of `ResetSignal` as an argument, which is then returned by the `yield` operator inside the generator function.
+
+This example could be rewritten in a more explicit form, but in that case, you would need to define `ResetSignal` type definition yourself.
+
+```ts
+import {build, resetable, ResetSignal} from 'mimicry-js';
+
+function* exponentiation(initialValue: number) {
+    const {val, set, use} = resetable(0);
+
+    while (true) {
+        const exponent = val() + 1;
+        set(exponent);
+
+        const signal: ResetSignal = yield initialValue ** exponent;
+
+        use(signal);
+    }
+}
+
+const builder = build({
+    fields: {
+        exponent: exponentiation(2),
+    },
+});
+
+const firstSet = builder.many(3);
+console.log(firstSet); // [ { exponent: 2 }, { exponent: 4 }, { exponent: 8 } ]
+
+builder.reset();
+
+const secondSet = builder.many(3);
+console.log(secondSet); //  [ { exponent: 2 }, { exponent: 4 }, { exponent: 8 } ]
+```
+
+> [!IMPORTANT]
+> To avoid errors, try to implement your generator function in such a way that all state updates are performed before returning a value using the `yield` operator in an infinite loop. \
+> If you update the state after returning from `yield`, the code will resume execution right after `yield` in the next iteration. 
+> This means that immediately after resetting the state, you will update it again, causing the `val` value in the next `while` loop iteration to differ from its initial value (the one passed to `resetable`).
+
+```ts
+import {build, resetable} from 'mimicry-js';
+
+function* exponentiation(initialValue: number) {
+    const {val, set, use} = resetable(1);
+
+    while (true) {
+        const exponent = val() + 1;
+        use(yield initialValue ** exponent);
+        set(exponent);
+    }
+}
+
+const builder = build({
+    fields: {
+        exponent: exponentiation(2),
+    },
+});
+
+const firstSet = builder.many(3);
+console.log(firstSet); // [ { exponent: 2 }, { exponent: 4 }, { exponent: 8 } ]
+
+builder.reset();
+
+const secondSet = builder.many(3);
+console.log(secondSet); //  [ { exponent: 32 }, { exponent: 64 }, { exponent: 128 } ]
+```
+> [!CAUTION]
+> The state was not reset because it was updated with `exponent` from the previous iteration!
 
 ## Best practices for using TypeScript types
 

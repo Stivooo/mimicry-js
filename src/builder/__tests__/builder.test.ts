@@ -7,6 +7,7 @@ import {bool} from '../../generators/bool';
 import {unique} from '../../generators/unique';
 import {generate} from '../../generators/generate';
 import {FieldsConfiguration} from '../types';
+import {resetable} from '../../reset/resetable';
 
 interface IProfileData {
     firstName: string;
@@ -406,7 +407,7 @@ describe('builder checks:', () => {
             expect(book.tags[1]).toBeInstanceOf(Tag);
         });
 
-        it('should rebuild result by build time postBuild', () => {
+        it('should modify result by using time postBuild', () => {
             class Tag {
                 constructor(
                     public id: number,
@@ -430,6 +431,24 @@ describe('builder checks:', () => {
             expect(double).toBeInstanceOf(Tag);
             expect(double.name).toBe('Double');
             expect(double.id).toBe(0);
+        });
+
+        it('should use both postBuild in build and one', () => {
+            const builder = build({
+                fields: {
+                    name: oneOf('Some', 'Another'),
+                },
+                postBuild: (data) => ({title: data.name}),
+            });
+
+            const result = builder.one({
+                overrides: {
+                    name: 'Double',
+                },
+                postBuild: (data) => data.title.toLowerCase(),
+            });
+
+            expect(result).toBe('double');
         });
 
         it('should build with nested overrides and functional field generator', () => {
@@ -795,17 +814,19 @@ describe('builder checks:', () => {
         });
 
         it('should build by fields configuration Generator with few initial parameters', () => {
-            const builder = build({
-                fields: generate(function* (a: number, b: string, c: boolean = true) {
-                    let prev = a;
+            const generator = function* (a: number, b: string, c: boolean = true) {
+                let prev = a;
 
-                    while (true) {
-                        prev = prev + a;
-                        yield {
-                            result: `${b} ${prev} ${c}`,
-                        };
-                    }
-                }),
+                while (true) {
+                    prev = prev + a;
+                    yield {
+                        result: `${b} ${prev} ${c}`,
+                    };
+                }
+            };
+
+            const builder = build({
+                fields: generate(generator),
             });
 
             const result = builder.many(3, {
@@ -1032,12 +1053,11 @@ describe('builder checks:', () => {
 
     describe('custom generator checks', () => {
         it('should build by custom generator', () => {
-            function* exponentiation(initialValue = 0) {
-                let exponent = 1;
+            function* exponentiation(initialValue: number) {
+                let exponent = 0;
 
                 while (true) {
-                    yield initialValue ** exponent;
-                    exponent++;
+                    yield initialValue ** ++exponent;
                 }
             }
 
@@ -1052,6 +1072,30 @@ describe('builder checks:', () => {
             expect(first.exponent).toBe(2);
             expect(second.exponent).toBe(4);
             expect(third.exponent).toBe(8);
+        });
+
+        it('should reset custom generator', () => {
+            function* exponentiation(initialValue: number) {
+                const {val, set, use} = resetable(0);
+
+                while (true) {
+                    use(yield initialValue ** set(val() + 1));
+                }
+            }
+
+            const builder = build({
+                fields: {
+                    exponent: exponentiation(2),
+                },
+            });
+
+            const firstSet = builder.many(3);
+
+            expect(firstSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{exponent: 2}, {exponent: 4}, {exponent: 8}]);
         });
     });
 
@@ -1103,6 +1147,69 @@ describe('builder checks:', () => {
             expect(profiles[2].firstName).toBe('Mike');
 
             expect(() => builder.one()).toThrow('No unique options left!');
+        });
+    });
+
+    describe('reset checks', () => {
+        it('should reset sequence', () => {
+            const builder = build({
+                fields: {
+                    value: sequence(),
+                },
+            });
+
+            const firstSet = builder.many(3);
+            expect(firstSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            builder.reset();
+
+            const thirdSet = builder.many(3);
+            expect(thirdSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+        });
+
+        it('should reset unique', () => {
+            const builder = build({
+                fields: {
+                    value: unique('A', 'B', 'C'),
+                },
+            });
+
+            const firstSet = builder.many(3);
+            expect(firstSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            builder.reset();
+
+            const secondSet = builder.many(3);
+            expect(secondSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            builder.reset();
+
+            const thirdSet = builder.many(3);
+            expect(thirdSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+        });
+
+        it('should reset multiple iterators', () => {
+            const builder = build({
+                fields: {
+                    id: sequence(),
+                    value: unique('Sam', 'John'),
+                },
+            });
+
+            const firstSet = builder.many(2);
+            expect(firstSet).toEqual([
+                {id: 0, value: 'Sam'},
+                {id: 1, value: 'John'},
+            ]);
+
+            builder.reset();
+
+            const secondSet = builder.many(2);
+            expect(secondSet).toEqual([
+                {id: 0, value: 'Sam'},
+                {id: 1, value: 'John'},
+            ]);
         });
     });
 });
