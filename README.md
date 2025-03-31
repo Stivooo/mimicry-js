@@ -175,7 +175,7 @@ console.log(thing.getName()); // --> "Plain object"
 
 ### `sequence`
 
-Often you will be creating objects that have an ID that comes from a database, so you need to guarantee that it's unique. You can use `sequence`, which increments the value on each call, starting **from 0**:
+Often you will be creating objects that have an ID that comes from a database, so you need to guarantee that it's unique. You can use `sequence`, which increments the value on each call, starting **from 1** (in versions ≤ "1.2.1" from 0):
 
 ```ts
 import {build, sequence} from 'mimicry-js';
@@ -192,9 +192,9 @@ const firstPerson = profileBuilder.one();
 const secondPerson = profileBuilder.one();
 const thirdPerson = profileBuilder.one();
 
-// firstPerson.id === 0
-// secondPerson.id === 1
-// thirdPerson.id === 2
+// firstPerson.id === 1
+// secondPerson.id === 2
+// thirdPerson.id === 3
 ```
 
 If you need more control, you can pass `sequence` a function that will be called with the number. This is useful to ensure completely unique emails, for example:
@@ -214,9 +214,9 @@ const firstPerson = profileBuilder.one();
 const secondPerson = profileBuilder.one();
 const thirdPerson = profileBuilder.one();
 
-// firstPerson.email === john0@mail.com
-// secondPerson.email === john1@mail.com
-// thirdPerson.email === john2@mail.com
+// firstPerson.email === john1@mail.com
+// secondPerson.email === john2@mail.com
+// thirdPerson.email === john3@mail.com
 ```
 ### `oneOf`
 
@@ -335,9 +335,9 @@ const builder = build({
 const firstSet = builder.many(3);
 console.log(firstSet);
 // [
-//     { id: 0, name: 'Sam' },
-//     { id: 1, name: 'John' },
-//     { id: 2, name: 'Mike' }
+//     { id: 1, name: 'Sam' },
+//     { id: 2, name: 'John' },
+//     { id: 3, name: 'Mike' }
 // ]
 
 builder.reset();
@@ -345,9 +345,9 @@ builder.reset();
 const secondSet = builder.many(3);
 console.log(secondSet);
 // [
-//     { id: 0, name: 'Sam' },
-//     { id: 1, name: 'John' },
-//     { id: 2, name: 'Mike' }
+//     { id: 1, name: 'Sam' },
+//     { id: 2, name: 'John' },
+//     { id: 3, name: 'Mike' }
 // ]
 ```
 > [!NOTE]
@@ -370,7 +370,7 @@ class User {
 
 const userBuilder = build({
     fields: {
-        id: 0,
+        id: 1,
         firstName: 'John',
         lastName: 'Doe',
     },
@@ -380,7 +380,7 @@ const userBuilder = build({
 const user = userBuilder.one();
 
 console.log(user);
-// User { id: 0, name: 'John Doe' }
+// User { id: 1, name: 'John Doe' }
 ```
 
 > [!NOTE]
@@ -484,7 +484,7 @@ const userBuilder = build<User>({
 const support = userBuilder.one({traits: 'support'});
 
 console.log(support);
-// { id: 0, name: 'John', role: 'support', email: 'support@mail.com' }
+// { id: 1, name: 'John', role: 'support', email: 'support@mail.com' }
 ```
 Note that the `support` trait is specified above. As a result, the `role` and `email` fields will be overwritten on each call, and we don't have to do this manually using `overrides`:
 
@@ -543,7 +543,7 @@ const userBuilder = build<User>({
 const customer = userBuilder.one({traits: ['customer', 'withContactDetails']});
 
 console.log(customer);
-// { id: 0, name: 'John', role: 'customer', email: 'contact@mail.com' }
+// { id: 1, name: 'John', role: 'customer', email: 'contact@mail.com' }
 ```
 
 > [!NOTE]
@@ -570,7 +570,7 @@ const orderBuilder = build({
         const count = previous ? previous.count + 1 : 1;
 
         return {
-            count: sequence((x) => ++x),
+            count: sequence(),
             price: 1000 * count,
         };
     },
@@ -746,19 +746,19 @@ const periods = builder.many(3, {
 console.log(periods);
 // [
 //     {
-//         id: 0,
+//         id: 1,
 //         start: 2025-01-01T00:00:00.000Z,
 //         end: 2025-01-02T00:00:00.000Z,
 //         type: 'open'
 //     },
 //     {
-//         id: 1,
+//         id: 2,
 //         start: 2025-01-02T00:00:00.000Z,
 //         end: 2025-01-03T00:00:00.000Z,
 //         type: 'closed'
 //     },
 //     {
-//         id: 2,
+//         id: 3,
 //         start: 2025-01-03T00:00:00.000Z,
 //         end: 2025-01-04T00:00:00.000Z,
 //         type: 'open'
@@ -850,10 +850,10 @@ const account = builder.one();
 
 console.log(account);
 // {
-//   id: 0,
+//   id: 1,
 //   name: 'John',
 //   address: {
-//     apartment: '0',
+//     apartment: '1',
 //     street: '456 Elm Ave',
 //     city: 'Los Angeles',
 //     postalCode: 1000
@@ -882,10 +882,10 @@ const account = builder.one({
 
 console.log(account);
 // {
-//   id: 0,
+//   id: 1,
 //   name: 'John',
 //   address: {
-//     apartment: '0',
+//     apartment: '1',
 //     street: '101 Pine Ln',
 //     city: 'San Francisco',
 //     postalCode: 1000
@@ -934,10 +934,10 @@ const account = builder.one({
 
 console.log(account);
 // {
-//   id: 0,
+//   id: 1,
 //   name: 'John',
 //   address: {
-//     apartment: '0',
+//     apartment: '1',
 //     postalCode: 1000,
 //     street: '456 Elm Ave',
 //     city: 'Los Angeles'
@@ -992,17 +992,17 @@ const account = builder.one({
 
 console.log(account);
 // {
-//   id: 0,
+//   id: 1,
 //   name: 'John',
 //   addresses: [
 //     {
-//       apartment: '0',
+//       apartment: '1',
 //       street: '456 Elm Ave',
 //       city: 'Los Angeles',
 //       postalCode: 98101
 //     },
 //     {
-//       apartment: '0',
+//       apartment: '1',
 //       street: '101 Pine Ln',
 //       city: 'San Francisco',
 //       postalCode: 10001

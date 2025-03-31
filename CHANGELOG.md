@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.2] - 2025-03-31
+### Fixed
+- Change the start value of `sequence` to 1.
+
 ## [1.2.1] - 2025-03-31
 ### Fixed
 - Fix exports of `resetable` and `ResetSignal`.
