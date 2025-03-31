@@ -169,9 +169,9 @@ describe('builder checks:', () => {
             });
 
             expect(builder.many(3)).toEqual([
-                {id: 0, name: 'X', value: 10, position: {x: 10, y: 40}},
-                {id: 1, name: 'X', value: 100, position: {x: 20, y: 50}},
-                {id: 2, name: 'X', value: 1000, position: {x: 30, y: 60}},
+                {id: 1, name: 'X', value: 10, position: {x: 10, y: 40}},
+                {id: 2, name: 'X', value: 100, position: {x: 20, y: 50}},
+                {id: 3, name: 'X', value: 1000, position: {x: 30, y: 60}},
             ]);
         });
     });
@@ -298,7 +298,7 @@ describe('builder checks:', () => {
                 traits: 'support',
             });
 
-            expect(supportUser).toEqual({id: 0, name: 'John', role: 'support', email: 'support@example.com'});
+            expect(supportUser).toEqual({id: 1, name: 'John', role: 'support', email: 'support@example.com'});
         });
     });
 
@@ -400,7 +400,7 @@ describe('builder checks:', () => {
                     ),
             });
 
-            const double = new Book('My Book', [new Tag(0, 'tag'), new Tag(1, 'tag')]);
+            const double = new Book('My Book', [new Tag(1, 'tag'), new Tag(2, 'tag')]);
             const book = builder.one();
             expect(book).toEqual(double);
             expect(book.tags.length).toBe(2);
@@ -430,7 +430,7 @@ describe('builder checks:', () => {
 
             expect(double).toBeInstanceOf(Tag);
             expect(double.name).toBe('Double');
-            expect(double.id).toBe(0);
+            expect(double.id).toBe(1);
         });
 
         it('should use both postBuild in build and one', () => {
@@ -498,7 +498,7 @@ describe('builder checks:', () => {
                             }),
                     },
                 }),
-            ).toEqual(new Book(0, 'Another Book', new Author(1000, 'Charles')));
+            ).toEqual(new Book(1, 'Another Book', new Author(1000, 'Charles')));
         });
 
         it('should fill skipped unnecessary fields by overrides values', () => {
@@ -525,7 +525,7 @@ describe('builder checks:', () => {
                 },
             });
 
-            expect(supportUser).toEqual({id: 0, name: 'John', role: 'support', email: 'support@example.com'});
+            expect(supportUser).toEqual({id: 1, name: 'John', role: 'support', email: 'support@example.com'});
         });
 
         it('should build by fields configurations with nested array of configurations', () => {
@@ -568,17 +568,17 @@ describe('builder checks:', () => {
             });
 
             expect(account).toEqual({
-                id: 0,
+                id: 1,
                 name: 'John',
                 addresses: [
                     {
-                        apartment: '0',
+                        apartment: '1',
                         street: '456 Elm Ave',
                         city: 'Los Angeles',
                         postalCode: 98101,
                     },
                     {
-                        apartment: '0',
+                        apartment: '1',
                         street: '101 Pine Ln',
                         city: 'San Francisco',
                         postalCode: 10001,
@@ -625,9 +625,9 @@ describe('builder checks:', () => {
                     new Book(generatedFields.id, generatedFields.title, generatedFields.author),
             });
 
-            const double_1 = new Book(0, 'My Book', new Author(0, 'Charles 0'));
-            const double_2 = new Book(1, 'My Book', new Author(1, 'Charles 1'));
-            const double_3 = new Book(2, 'My Book', new Author(2, 'Charles 2'));
+            const double_1 = new Book(1, 'My Book', new Author(1, 'Charles 1'));
+            const double_2 = new Book(2, 'My Book', new Author(2, 'Charles 2'));
+            const double_3 = new Book(3, 'My Book', new Author(3, 'Charles 3'));
             expect(builder.many(3)).toEqual([double_1, double_2, double_3]);
         });
 
@@ -720,7 +720,7 @@ describe('builder checks:', () => {
             });
 
             expect(structure).toEqual({
-                id: 0,
+                id: 1,
                 type: 'Type',
                 unit: {
                     id: 5,
@@ -753,7 +753,7 @@ describe('builder checks:', () => {
 
             const structures = builder.many(2, {
                 overrides: {
-                    type: sequence((x) => `Type ${++x}`),
+                    type: sequence((x) => `Type ${x}`),
                     unit: {
                         value: unique(5, 10),
                         position: {
@@ -765,10 +765,10 @@ describe('builder checks:', () => {
 
             expect(structures).toEqual([
                 {
-                    id: 0,
+                    id: 1,
                     type: 'Type 1',
                     unit: {
-                        id: 0,
+                        id: 1,
                         value: 5,
                         name: 'degree',
                         position: {
@@ -778,10 +778,10 @@ describe('builder checks:', () => {
                     },
                 },
                 {
-                    id: 1,
+                    id: 2,
                     type: 'Type 2',
                     unit: {
-                        id: 1,
+                        id: 2,
                         value: 10,
                         name: 'degree',
                         position: {
@@ -885,8 +885,8 @@ describe('builder checks:', () => {
             const firstSet = builder.many(3);
             const secondSet = builder.many(3);
 
-            expect(firstSet).toEqual([{result: 0}, {result: 1}, {result: 2}]);
-            expect(secondSet).toEqual([{result: 3}, {result: 4}, {result: 5}]);
+            expect(firstSet).toEqual([{result: 1}, {result: 2}, {result: 3}]);
+            expect(secondSet).toEqual([{result: 4}, {result: 5}, {result: 6}]);
         });
 
         it('should build by fields configuration Generator with initial object', () => {
@@ -967,9 +967,9 @@ describe('builder checks:', () => {
             });
 
             expect(result).toEqual([
-                {result: 1, attrs: {name: 'A'}},
-                {result: 2, attrs: {name: 'B'}},
-                {result: 3, attrs: {name: 'C'}},
+                {result: 2, attrs: {name: 'A'}},
+                {result: 3, attrs: {name: 'B'}},
+                {result: 4, attrs: {name: 'C'}},
             ]);
         });
 
@@ -1044,7 +1044,7 @@ describe('builder checks:', () => {
                 },
             });
             const double = builder.one();
-            expect(double.id).toBe(0);
+            expect(double.id).toBe(1);
             expect(double.name).toBe('Name');
             expect(double.getType).toBeInstanceOf(Function);
             expect(double.getType()).toBe('Some');
@@ -1159,15 +1159,15 @@ describe('builder checks:', () => {
             });
 
             const firstSet = builder.many(3);
-            expect(firstSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            expect(firstSet).toEqual([{value: 1}, {value: 2}, {value: 3}]);
             builder.reset();
 
             const secondSet = builder.many(3);
-            expect(secondSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            expect(secondSet).toEqual([{value: 1}, {value: 2}, {value: 3}]);
             builder.reset();
 
             const thirdSet = builder.many(3);
-            expect(thirdSet).toEqual([{value: 0}, {value: 1}, {value: 2}]);
+            expect(thirdSet).toEqual([{value: 1}, {value: 2}, {value: 3}]);
         });
 
         it('should reset unique', () => {
@@ -1199,16 +1199,16 @@ describe('builder checks:', () => {
 
             const firstSet = builder.many(2);
             expect(firstSet).toEqual([
-                {id: 0, value: 'Sam'},
-                {id: 1, value: 'John'},
+                {id: 1, value: 'Sam'},
+                {id: 2, value: 'John'},
             ]);
 
             builder.reset();
 
             const secondSet = builder.many(2);
             expect(secondSet).toEqual([
-                {id: 0, value: 'Sam'},
-                {id: 1, value: 'John'},
+                {id: 1, value: 'Sam'},
+                {id: 2, value: 'John'},
             ]);
         });
     });
