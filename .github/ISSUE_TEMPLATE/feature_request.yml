@@ -1,0 +1,37 @@
+name: "Feature Request"
+description: "Suggest a new feature or enhancement"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please provide a detailed description of the feature you'd like to see.
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: "Feature description"
+      description: "Describe the feature and its use case."
+      placeholder: "I would like the library to support..."
+
+  - type: textarea
+    id: example
+    attributes:
+      label: "Example usage"
+      description: "Provide an example of how this feature would be used."
+      placeholder: |
+        ```ts
+        import { build } from 'mimicry-js';
+
+        const builder = build(...);
+        ```
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: "Checklist"
+      description: "Before submitting, please check the following:"
+      options:
+        - label: "I have searched for existing feature requests."
+        - label: "This feature is not already possible with the current version."
+        - label: "I am willing to help implement this feature (if possible)."

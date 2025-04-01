@@ -1,0 +1,66 @@
+name: "Bug Report"
+description: "Report an issue with the library"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: "Library version"
+      description: "Which version of mimicry-js are you using?"
+      placeholder: "e.g., 1.2.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Bug description"
+      description: "What is the issue?"
+      placeholder: "A clear and concise description of what the bug is."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to reproduce"
+      description: "Provide steps or code snippets to reproduce the issue."
+      placeholder: |
+        1. Create a `builder({ ... })` with the following parameters:
+        2. Call `builder.many(...)` with the following parameters:
+        3. Expected output: ...
+        4. Actual output: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Provide information about your setup."
+      placeholder: |
+        - Node.js version: 1x.x
+        - Test runner
+        - Package manager: npm/yarn/pnpm
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Error logs (if any)"
+      description: "Paste any error messages or logs here."
+      render: shell
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: "Checklist"
+      description: "Please confirm the following before submitting."
+      options:
+        - label: "I have searched for existing issues."
+        - label: "I have provided all necessary information for reproduction."
+        - label: "I have tested this with the latest version of the library."
