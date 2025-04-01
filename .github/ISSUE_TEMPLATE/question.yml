@@ -1,0 +1,32 @@
+name: "❔ Question"
+description: "Need help or clarification? Feel free to ask here!"
+labels: ["question"]
+title: "[QUESTION]: "
+assignees: ["Stivooo"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Describe your question as clearly as possible.
+      placeholder: "How can I reset all generators at once?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What have you tried?
+      description: If applicable, describe any attempts you made to solve the issue.
+      placeholder: "I tried using `builder.reset()`, but it didn’t work as expected."
+    validations:
+      required: false
+
+  - type: input
+    id: related-docs
+    attributes:
+      label: Related documentation or issues (if applicable)
+      description: Provide links to related documentation, issues, or discussions.
+      placeholder: "https://github.com/Stivooo/mimicry-js/issues/42"
+    validations:
+      required: false

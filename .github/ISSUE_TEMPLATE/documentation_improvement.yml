@@ -1,0 +1,37 @@
+name: "📖 Documentation Improvement"
+description: "Suggest an improvement or report an issue with the documentation."
+labels: ["documentation"]
+title: "[DOCUMENTATION]: "
+assignees: ["Stivooo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to improve the documentation! Please provide details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "What needs to be improved?"
+      description: Clearly describe the issue or the missing information in the documentation.
+      placeholder: "The documentation for `sequence()` is unclear about..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: "Suggested improvement"
+      description: Provide a suggestion for how the documentation can be improved.
+      placeholder: "The section could include an example like this..."
+    validations:
+      required: false
+
+  - type: input
+    id: doc_link
+    attributes:
+      label: "Related documentation link (if applicable)"
+      description: Provide a link to the section that needs improvement.
+      placeholder: "https://github.com/Stivooo/mimicry-js/blob/main/README.md"
+    validations:
+      required: false

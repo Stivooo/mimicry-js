@@ -1,6 +1,8 @@
-name: "Feature Request"
+name: "🛠️ Feature Request"
 description: "Suggest a new feature or enhancement"
 labels: ["enhancement"]
+title: "[ENHANCEMENT]: "
+assignees: ["Stivooo"]
 body:
   - type: markdown
     attributes:

@@ -1,6 +1,8 @@
-name: "Bug Report"
+name: "‼️ Bug Report"
 description: "Report an issue with the library"
 labels: ["bug"]
+title: "[BUG]: "
+assignees: ["Stivooo"]
 body:
   - type: markdown
     attributes:
