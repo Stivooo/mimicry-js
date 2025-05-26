@@ -17,7 +17,7 @@ import {deepMerge} from './utils/deepMerge';
 import {isPlainObject} from './typeCheckers/isPlainObject';
 import {map} from './utils/map';
 import {extractTraits} from './utils/extractTraits';
-import {extractOverrides} from './__tests__/extractOverrides';
+import {extractOverrides} from './utils/extractOverrides';
 import {extractFieldsConfiguration} from './utils/extractFieldsConfiguration';
 import {extractInitialParameters} from './utils/extractInitialParameters';
 import {ResetableSignal} from '../reset/ResetableSignal';
