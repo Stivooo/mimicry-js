@@ -8,7 +8,6 @@ const config = {
     trailingComma: 'all',
     bracketSpacing: false,
     tabWidth: 4,
-    jsxSingleQuote: true,
     bracketSameLine: false,
 };
 

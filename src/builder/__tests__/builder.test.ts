@@ -8,6 +8,7 @@ import {unique} from '../../generators/unique';
 import {generate} from '../../generators/generate';
 import {FieldsConfiguration} from '../types';
 import {resetable} from '../../reset/resetable';
+import {seed} from '../../random/random';
 
 interface IProfileData {
     firstName: string;
@@ -168,10 +169,12 @@ describe('builder checks:', () => {
                 },
             });
 
+            seed(1);
+
             expect(builder.many(3)).toEqual([
-                {id: 1, name: 'X', value: 10, position: {x: 10, y: 40}},
-                {id: 2, name: 'X', value: 100, position: {x: 20, y: 50}},
-                {id: 3, name: 'X', value: 1000, position: {x: 30, y: 60}},
+                {id: 1, name: 'X', value: 10, position: {x: 30, y: 40}},
+                {id: 2, name: 'X', value: 100, position: {x: 10, y: 60}},
+                {id: 3, name: 'X', value: 1000, position: {x: 20, y: 50}},
             ]);
         });
     });
@@ -649,10 +652,12 @@ describe('builder checks:', () => {
                 },
             });
 
+            seed(1);
+
             expect(users).toHaveLength(3);
-            expect(users[0].name).toBe('John');
+            expect(users[0].name).toBe('Andrew');
             expect(users[0].createdAt).toBe(1577836801000);
-            expect(users[1].name).toBe('Andrew');
+            expect(users[1].name).toBe('John');
             expect(users[1].createdAt).toBe(1577836802000);
             expect(users[2].name).toBe('Mike');
             expect(users[2].createdAt).toBe(1577836803000);
@@ -763,13 +768,15 @@ describe('builder checks:', () => {
                 },
             });
 
+            seed(1);
+
             expect(structures).toEqual([
                 {
                     id: 1,
                     type: 'Type 1',
                     unit: {
                         id: 1,
-                        value: 5,
+                        value: 10,
                         name: 'degree',
                         position: {
                             x: 50,
@@ -782,7 +789,7 @@ describe('builder checks:', () => {
                     type: 'Type 2',
                     unit: {
                         id: 2,
-                        value: 10,
+                        value: 5,
                         name: 'degree',
                         position: {
                             x: 50,
@@ -966,10 +973,12 @@ describe('builder checks:', () => {
                 initialParameters: [1],
             });
 
+            seed(1);
+
             expect(result).toEqual([
-                {result: 2, attrs: {name: 'A'}},
-                {result: 3, attrs: {name: 'B'}},
-                {result: 4, attrs: {name: 'C'}},
+                {result: 2, attrs: {name: 'C'}},
+                {result: 3, attrs: {name: 'A'}},
+                {result: 4, attrs: {name: 'B'}},
             ]);
         });
 
@@ -1177,12 +1186,14 @@ describe('builder checks:', () => {
                 },
             });
 
+            seed(1);
+
             const firstSet = builder.many(3);
-            expect(firstSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            expect(firstSet).toEqual([{value: 'C'}, {value: 'A'}, {value: 'B'}]);
             builder.reset();
 
             const secondSet = builder.many(3);
-            expect(secondSet).toEqual([{value: 'A'}, {value: 'B'}, {value: 'C'}]);
+            expect(secondSet).toEqual([{value: 'C'}, {value: 'B'}, {value: 'A'}]);
             builder.reset();
 
             const thirdSet = builder.many(3);

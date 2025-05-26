@@ -7,6 +7,10 @@ export {fixed} from './generators/fixed';
 export {bool} from './generators/bool';
 export {unique} from './generators/unique';
 export {generate} from './generators/generate';
+export {int} from './generators/int';
+export {float} from './generators/float';
+
+export {seed, getSeed} from './random/random';
 
 export type {
     BuilderConfiguration,

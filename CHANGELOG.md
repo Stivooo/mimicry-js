@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-05-26
+### Fixed
+- [`unique`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#unique): values from the set are now selected in random order.
+
+### Added
+- Added support for generating reproducible sequences of random values by specifying a [`seed`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#seed).
+- Add [`int`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#int) and [`float`](https://github.com/Stivooo/mimicry-js?tab=readme-ov-file#float) number generators
+
 ## [1.2.2] - 2025-03-31
 ### Fixed
 - Change the start value of `sequence` to 1.
