@@ -2,5 +2,6 @@
 dist/
 node_modules/
 .DS_Store
+.yarn
 yarn-error.log
 /src/coverage/
